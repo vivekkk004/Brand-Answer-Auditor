@@ -174,6 +174,15 @@ def test_generate_disables_automatic_calls_and_forces_the_tool() -> None:
     assert calling.allowed_function_names == ["submit_claims"]
 
 
+def test_empty_system_prompt_is_left_out() -> None:
+    sdk = RecordingSdk(gemini_response([{"text": "ok"}]))
+    client = GeminiClient(
+        api_key="test-key", model="m", timeout_seconds=5, temperature=None, sdk_client=sdk
+    )
+    client.generate(system="", messages=[], tools=[])
+    assert sdk.requests[0]["config"].system_instruction is None
+
+
 def test_no_required_tool_means_no_tool_config() -> None:
     sdk = RecordingSdk(gemini_response([{"text": "ok"}]))
     client = GeminiClient(

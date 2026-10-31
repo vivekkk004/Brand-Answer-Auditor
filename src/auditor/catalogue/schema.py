@@ -50,6 +50,7 @@ class Prompt(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     prompt_id: str = Field(pattern=ID_PATTERN, max_length=64)
+    category: str = Field(pattern=ID_PATTERN, max_length=64)
     text: str = Field(min_length=1, max_length=2000)
     market: str | None = Field(default=None, pattern=MARKET_PATTERN)
 

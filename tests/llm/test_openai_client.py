@@ -80,6 +80,12 @@ def test_messages_are_converted_to_openai_format() -> None:
     ]
 
 
+def test_empty_system_prompt_is_left_out() -> None:
+    assert to_openai_messages("", [Message(role="user", content="Hi")]) == [
+        {"role": "user", "content": "Hi"}
+    ]
+
+
 def test_unparsed_arguments_are_replayed_as_sent() -> None:
     call = ToolCall("c1", "get_brand_facts", {"_unparsed": "{brand_id: zentro"})
     converted = to_openai_messages("s", [Message(role="assistant", tool_calls=(call,))])

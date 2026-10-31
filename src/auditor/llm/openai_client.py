@@ -78,7 +78,8 @@ def to_openai_tool(tool: ToolSpec) -> dict[str, Any]:
 
 
 def to_openai_messages(system: str, messages: Sequence[Message]) -> list[dict[str, Any]]:
-    converted: list[dict[str, Any]] = [{"role": "system", "content": system}]
+    # An empty system prompt is left out: audit answers are generated with none (SPEC 6.4).
+    converted: list[dict[str, Any]] = [{"role": "system", "content": system}] if system else []
     for message in messages:
         if message.role == "user":
             converted.append({"role": "user", "content": message.content})

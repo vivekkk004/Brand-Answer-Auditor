@@ -79,7 +79,7 @@ def test_error_names_file_and_line(demo_copy: Path) -> None:
 
 
 def test_duplicate_prompt_is_rejected(demo_copy: Path) -> None:
-    append_line(demo_copy / PROMPTS_FILE, "p01,Another prompt,US")
+    append_line(demo_copy / PROMPTS_FILE, "p01,earbuds,Another prompt,US")
     with pytest.raises(CatalogueError, match="duplicate prompt_id"):
         load_prompts(demo_copy / PROMPTS_FILE)
 

@@ -36,7 +36,7 @@ FACT_COLUMNS = (
     "valid_from",
     "source_url",
 )
-PROMPT_COLUMNS = ("prompt_id", "text", "market")
+PROMPT_COLUMNS = ("prompt_id", "category", "text", "market")
 
 
 class CatalogueError(ValueError):
@@ -109,9 +109,20 @@ def seed_database(
     for prompt in prompts:
         existing_prompt = session.get(db.Prompt, prompt.prompt_id)
         if existing_prompt is None:
-            session.add(db.Prompt(id=prompt.prompt_id, text=prompt.text, market=prompt.market))
+            session.add(
+                db.Prompt(
+                    id=prompt.prompt_id,
+                    category=prompt.category,
+                    text=prompt.text,
+                    market=prompt.market,
+                )
+            )
             inserted["prompts"] += 1
-        elif (existing_prompt.text, existing_prompt.market) != (prompt.text, prompt.market):
+        elif (existing_prompt.category, existing_prompt.text, existing_prompt.market) != (
+            prompt.category,
+            prompt.text,
+            prompt.market,
+        ):
             raise CatalogueError(f"prompt {prompt.prompt_id!r} already exists with other content")
 
     session.flush()

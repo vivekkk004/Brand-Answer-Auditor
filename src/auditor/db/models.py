@@ -102,6 +102,8 @@ class Prompt(Base):
     __tablename__ = "prompts"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    # Runs select their prompts by category (for example "earbuds").
+    category: Mapped[str] = mapped_column(String(64), index=True)
     text: Mapped[str] = mapped_column(Text)
     market: Mapped[str | None] = mapped_column(String(8))
 
@@ -129,15 +131,18 @@ class AuditRun(Base):
     # SHA-256 of the request body, to spot a reused key with a different body.
     request_hash: Mapped[str] = mapped_column(String(64))
     status: Mapped[RunStatus] = mapped_column(str_enum(RunStatus), default=RunStatus.QUEUED)
-    target_provider: Mapped[Provider] = mapped_column(str_enum(Provider))
-    target_model: Mapped[str] = mapped_column(String(200))
-    repeats: Mapped[int]
-    market: Mapped[str | None] = mapped_column(String(8))
-    prompt_ids: Mapped[list[str]] = mapped_column(JSON)
-    brand_ids: Mapped[list[str]] = mapped_column(JSON)
+    # The validated RunConfig (audit/run_config.py), stored as JSON.
+    config: Mapped[dict] = mapped_column(JSON)
+    # Budget: model calls used so far, checked before every call (SPEC 6.4).
+    max_model_calls: Mapped[int]
+    model_calls: Mapped[int] = mapped_column(default=0)
+    # Results of compute_run_metrics, written when the run finishes.
+    metrics: Mapped[dict | None] = mapped_column(JSON)
     failure_reason: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Updated after every answer; a running run with an old heartbeat has lost its worker.
+    heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
@@ -166,6 +171,13 @@ class Answer(Base):
     brands_mentioned: Mapped[list[str]] = mapped_column(JSON, default=list)
     verifier_provider: Mapped[Provider | None] = mapped_column(str_enum(Provider))
     verifier_model: Mapped[str | None] = mapped_column(String(200))
+    prompt_version: Mapped[str | None] = mapped_column(String(16))
+    verification_turns: Mapped[int | None]
+    verification_latency_ms: Mapped[float | None]
+    timed_out: Mapped[bool] = mapped_column(default=False)
+    # Token counts as reported by the provider, never estimated:
+    # {"generation": {...}, "verification": {...}} with input/output/thinking keys.
+    usage: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
 

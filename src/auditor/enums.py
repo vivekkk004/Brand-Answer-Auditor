@@ -12,6 +12,8 @@ class RunStatus(StrEnum):
     QUEUED = "queued"
     RUNNING = "running"
     COMPLETED = "completed"
+    # Stopped early because the model-call budget ran out; metrics cover what was done.
+    PARTIAL = "partial"
     FAILED = "failed"
 
 

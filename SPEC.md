@@ -24,7 +24,7 @@ right and the next one wrong, so we check every answer, not just one.
 
 The service does two jobs:
 
-- **Audit runs**: send shopping prompts to a target AI model many times, store every
+- **Audit runs**: send shopping prompts to one or two answer models several times, store every
   answer, measure inclusion per brand, and verify the claims in every answer.
 - **Verification**: a verification agent (a second AI model with tools) reads one answer,
   pulls out each product claim, and labels it `supported`, `contradicted` or `unknown`
@@ -40,8 +40,9 @@ direction is costly and a human should confirm it before anyone acts on it.
 ### In scope
 
 - HTTP API (FastAPI) described in section 6.
-- Audit runs against target models through official APIs (Google Gemini via `google-genai`,
-  OpenAI via `openai`).
+- Audit runs against answer models through official APIs (Google Gemini via `google-genai`,
+  OpenAI via `openai`), processed by a separate worker process (6.4) that resumes
+  interrupted runs.
 - Inclusion measurement with Wilson confidence intervals.
 - Verification agent with tool calling, strict output validation and a call limit.
 - Human review queue for contradicted claims.
@@ -58,8 +59,8 @@ direction is costly and a human should confirm it before anyone acts on it.
 - Any web UI. The API is the product.
 - Editing the catalogue through the API (catalogue changes go through the loader script).
 - Per-client catalogues (v1 has one shared catalogue).
-- Background job queues (Celery, Redis). Runs execute in-process (see 6.4).
-- Resuming a run after a server restart.
+- Separate queue services (Celery, Redis). The worker uses the PostgreSQL table as its
+  queue (6.4).
 
 ---
 
@@ -298,7 +299,7 @@ conversation (for debugging).
   transient error that also sets `timed_out`), permanent (not retried), and config
   (401/403 or missing key/model; not retried). For Gemini, timeouts and network failures
   arrive as raw `httpx`/`httpx2` exceptions and are mapped the same way.
-- The same policy applies to the target model in audit runs.
+- The same policy applies to the answer models in audit runs.
 
 ### 4.9 Saving: all or nothing
 
@@ -306,10 +307,12 @@ conversation (for debugging).
   item per `contradicted` claim are saved in **one database transaction**.
 - On failure, **no claims and no review items** are saved. The answer row records
   `status = verification_failed` and the `error_type`, so failures can be counted.
-- Model call metadata (call number, attempts, latency, input/output tokens, outcome) is
-  stored per call for metrics. Token counts come from the provider's usage data; if the
-  provider gives none, they are stored as null, never estimated. Gemini "thinking" tokens
-  are billed as output, so they count toward output tokens and are also stored separately.
+- The answer row also stores the verifier provider and model, prompt version, turns
+  used, latency, `timed_out`, and token usage for both phases (`usage`:
+  `{"generation": {...}, "verification": {...}}` with input/output/thinking counts).
+  Token counts come from the provider's usage data; if the provider gives none, they are
+  stored as null, never estimated. Gemini "thinking" tokens are billed as output, so they
+  count toward output tokens and are also stored separately.
 
 ---
 
@@ -359,7 +362,7 @@ Verification failures add `"error_type"` (section 5) and `"answer_id"`.
 |---------------|---------|---------|--------|
 | `GET /healthz` | Liveness and database check. | `200 {"status": "ok"}` | `503` database unreachable |
 | `POST /v1/verify` | Verify one answer text now (synchronous). Saves the answer, claims and review items. | `201` answer with claims | `401`; `422` invalid body (empty/too long text); `502` `provider` or `prompt` failure; `503` `config` failure; `500` `tool`, `data` or `code` failure |
-| `POST /v1/audit-runs` | Start an audit run. Needs `Idempotency-Key` header. | `202` new run (status `queued`); `200` same key and same body → the existing run | `400` missing `Idempotency-Key`; `401`; `409` same key with a different body; `422` invalid body or unknown brand ID or unconfigured provider |
+| `POST /v1/audit-runs` | Queue an audit run (body = run config, 6.4). Needs `Idempotency-Key` header. | `202` new run (status `queued`); `200` same key and same body → the existing run | `400` missing `Idempotency-Key`; `401`; `409` same key with a different body; `422` invalid run config |
 | `GET /v1/audit-runs/{id}` | Run status, counts and metrics (section 7). | `200` | `401`; `404` |
 | `GET /v1/answers/{id}` | One answer: text, status, error type, brands mentioned, claims with offsets, labels, fact IDs, rationale. | `200` | `401`; `404` |
 | `GET /v1/review-items?status=` | List review items. `status` is `open`, `confirmed` or `dismissed` (optional). `limit` (default 50, max 200) and `offset`. | `200` list | `401`; `422` invalid query |
@@ -367,23 +370,32 @@ Verification failures add `"error_type"` (section 5) and `"answer_id"`.
 
 ### 6.4 Audit runs
 
-Request body:
+**Run config** (stored on the run as JSON, validated by `RunConfig`):
 
 ```json
 {
+  "category": "earbuds",
   "prompt_ids": ["p02", "p03"],
-  "brand_ids": ["zentro", "kovalt"],
-  "repeats": 20,
-  "target": {"provider": "gemini", "model": "<model name>"},
-  "market": "US"
+  "answer_providers": ["gemini", "openai"],
+  "repeats": 3,
+  "agent_version": "v1",
+  "max_model_calls": 500
 }
 ```
 
-Limits: 1–50 prompt IDs, each in the `prompts` table (prompt text ≤ 2,000 characters);
-1–20 repeats; at most 200 answers per run (`prompts × repeats`); `brand_ids` must exist in
-the catalogue.
+| field | rule | why |
+|-------|------|-----|
+| `category` | required; prompts are selected by `prompts.category` | a run audits one product area |
+| `prompt_ids` | optional; 1–50 unique IDs, all in that category | narrow a run to some prompts |
+| `answer_providers` | 1–2 unique of `gemini`, `openai` | compare assistants, keep cost bounded |
+| `repeats` | 1–5, default 3 | stability without a large bill |
+| `agent_version` | `v1` or `v2`, default `v1` | which system prompt verifies (4.1) |
+| `max_model_calls` | 1–5,000, default 500 | hard budget (below) |
 
-Idempotency:
+Each answer provider writes answers with its own model setting (`GEMINI_ANSWER_MODEL`,
+`OPENAI_ANSWER_MODEL`); the verifier uses `VERIFIER_PROVIDER` / `VERIFIER_MODEL`.
+
+**Idempotency** (`POST /v1/audit-runs`):
 
 - The key is scoped to the client. The server stores the key with a SHA-256 hash of the
   request body.
@@ -392,24 +404,54 @@ Idempotency:
 - Two requests racing with the same key: a unique database constraint lets only one win;
   the other returns the winner's run.
 
-Processing (no job queue):
+**Worker.** Runs are processed by `auditor worker`, a separate process. The `audit_runs`
+table is the queue; no Celery or Redis.
 
-- The run is processed in the API process after the response is sent (FastAPI background
-  task), one answer at a time.
-- For each prompt × repeat: call the target model with the prompt only (no system prompt,
-  so we audit default behaviour) → save the answer text → detect brand mentions (7.1) →
-  verify the answer (section 4).
-- Run status: `queued` → `running` → `completed` (every answer attempted, even if some
-  failed) or `failed` (run-level problem).
-- On startup, runs left in `queued` or `running` are marked `failed` with reason
-  "interrupted by restart". Resuming is out of scope.
+- **Claiming:** a worker takes the oldest `queued` run with
+  `SELECT ... FOR UPDATE SKIP LOCKED` and marks it `running` in the same transaction.
+  Two workers asking at once get different runs, and neither waits for the other.
+- **Heartbeat:** `heartbeat_at` is updated after every answer. Before claiming, a worker
+  puts any `running` run whose heartbeat is older than `STALE_RUN_SECONDS` (default 900)
+  back to `queued`: its worker has died.
+- **Startup check:** the worker builds the verifier client before taking work, so a
+  missing provider, model or key stops it at once.
+- **Shutdown:** on SIGTERM or Ctrl+C, the current run is handed back to `queued` before
+  its next model call, and the worker exits.
 
-Answer status:
+**Processing a run** (`process_run`):
+
+1. Select the prompts (unknown category or prompt ID → run `failed`, "data: ...").
+   Build every model client first (missing key or model → run `failed`, "config: ...").
+2. **Collect:** for each prompt × provider × repeat, ask the answer model the prompt with
+   no system prompt (we audit default behaviour), with timeout and retries (4.8). Detect
+   brand mentions (7.1). Commit each answer on its own. A slot that already has an
+   answer row (any status) is skipped, so a resumed run never pays for an answer twice.
+   A provider failure is saved as `generation_failed`; the run goes on.
+3. **Verify:** each `pending` answer goes through the agent (section 4), against one
+   in-memory snapshot of the catalogue for the whole run. The result is saved in one
+   transaction (4.9).
+4. **Finish:** compute the run metrics (section 7) from the stored rows, store them on
+   the run, and set the final status.
+
+No database transaction is held open during a model call.
+
+**Budget.** `model_calls` on the run counts logical model calls (retries are attempts of
+one call and are not counted). Before each collection call it must stay within
+`max_model_calls`. Before verifying an answer, the worst case (`AGENT_MAX_TURNS`) is
+reserved; the unused turns are refunded afterwards. If the next call does not fit, the
+run stops with status `partial` and metrics for what was done.
+
+**Run status:** `queued` → `running` → `completed` (every answer attempted, even if some
+failed), `partial` (budget reached), or `failed` (run-level problem; `failure_reason`
+starts with `config:`, `data:` or `code:`). A `config` failure is logged as one line, a
+`code` failure with its traceback.
+
+**Answer status:**
 
 | status | meaning | counts for inclusion? | counts for accuracy? |
 |--------|---------|-----------------------|----------------------|
-| `pending` | not processed yet | no | no |
-| `generation_failed` | target model gave no answer | no | no |
+| `pending` | answer text saved, not verified yet | yes | no |
+| `generation_failed` | the answer model gave no answer | no | no |
 | `verification_failed` | answer text saved, verification failed | yes | no |
 | `verified` | answer text and claims saved | yes | yes |
 
@@ -427,6 +469,10 @@ fails with a `config` error. `.env.example` lists every variable.
 | `OPENAI_API_KEY` | if OpenAI is used | Held as a secret; never printed. |
 | `VERIFIER_PROVIDER` | to verify | `gemini` or `openai`. |
 | `VERIFIER_MODEL` | to verify | Model ID. Empty by default; no model ID is hardcoded. |
+| `GEMINI_ANSWER_MODEL` | for Gemini runs | The model that writes audited answers. Empty by default. |
+| `OPENAI_ANSWER_MODEL` | for OpenAI runs | The model that writes audited answers. Empty by default. |
+| `WORKER_POLL_SECONDS` | no | Default 5. How often an idle worker looks for queued runs. |
+| `STALE_RUN_SECONDS` | no | Default 900. A running run with an older heartbeat is requeued. |
 | `LLM_TIMEOUT_SECONDS` | no | Default 30. |
 | `LLM_MAX_RETRIES` | no | Default 3. |
 | `AGENT_MAX_TURNS` | no | Default 4, allowed 1–4. |
@@ -446,14 +492,15 @@ Fixed value sets (statuses, labels, error types, attributes, providers) are Pyth
 | `brands` | brand ID, name (shared catalogue) |
 | `brand_aliases` | other names a brand appears under; unique ignoring case across all brands |
 | `brand_facts` | the facts in 4.6; immutable |
-| `prompts` | prompt ID, text, market |
+| `prompts` | prompt ID, category, text, market |
 | `api_clients` | client name and the SHA-256 hash of its API key (one key per client in v1) |
-| `audit_runs` | client, idempotency key + request hash (unique per client), status, target provider/model, repeats, market, prompt IDs, brand IDs, timestamps |
-| `answers` | client, run (empty for `/v1/verify`), prompt, provider/model, repeat index, text, status, error type, brands mentioned, verifier provider/model; unique on (run, prompt, model, repeat index) |
+| `audit_runs` | client, idempotency key + request hash (unique per client), status, run config (JSON), `model_calls` / `max_model_calls`, metrics (JSON), failure reason, created/started/heartbeat/finished times |
+| `answers` | client, run (empty for `/v1/verify`), prompt, provider/model, repeat index, market, text, status, error type and message, brands mentioned, verifier provider/model, prompt version, turns, latency, `timed_out`, token usage (JSON); unique on (run, prompt, model, repeat index) |
 | `claims` | answer, quote, start/end offsets, brand, product, attribute, label, cited fact IDs, rationale |
 | `review_items` | client, claim (one item per claim), status, note, timestamps |
 
-Per-call model metadata (4.9) gets its own table when the agent is built.
+Model-call metadata is kept per answer (4.9), not per call: the metrics in section 7
+only need per-answer totals.
 
 Logs never contain API keys, `Authorization` headers or provider credentials. Answer
 text and prompts are not logged at `INFO` level.
@@ -471,9 +518,11 @@ metric is reported as `null`, never as 0 or 1.
 - **Mention detection is done by code, not by a model.** A brand is mentioned if its name
   or any alias appears in the answer as a whole word, ignoring case. This is cheap,
   deterministic and easy to explain.
-- For each brand in the run: `k` = answers that mention it, `n` = answers with text
-  (`verified` + `verification_failed`). Inclusion rate `p = k / n`.
-- Reported overall and per prompt, with `k`, `n`, `p` and the 95% Wilson interval.
+- For each catalogue brand: `k` = answers that mention it, `n` = answers with text
+  (`pending`, `verified` or `verification_failed`; mention detection does not need
+  verification). Inclusion rate `p = k / n`.
+- Reported per answer model and for all models together, with `k`, `n`, `p` and the 95%
+  Wilson interval.
 
 Wilson score interval, `z = 1.959964` (95%):
 
@@ -489,9 +538,15 @@ which claims false certainty). Wilson stays inside [0, 1] and is honest at small
 
 ### 7.2 Claim label shares
 
-For a run (and per brand): counts of `supported`, `contradicted` and `unknown` claims from
-`verified` answers, and each count divided by the total number of claims. Counts are
-always shown next to shares.
+For a run: counts of `supported`, `contradicted` and `unknown` claims from `verified`
+answers, and each count divided by the total number of claims. Counts are always shown
+next to shares.
+
+The run metrics stored on a finished run also include: answer counts by status, failed
+answers by error type, token totals per phase (generation, verification, total), model
+calls used against the budget, and `cost_usd` — computed from reported tokens and
+`INPUT_TOKEN_PRICE_PER_MILLION` / `OUTPUT_TOKEN_PRICE_PER_MILLION`, and `null` unless
+both prices are set and tokens were reported.
 
 ### 7.3 Evaluation metrics (offline harness)
 
@@ -551,6 +606,11 @@ copied from a generated report.
 - [ ] All validation problems in one submission are returned together.
 - [ ] Failed tool calls until the turn limit end as `tool`; invalid output or no tool calls end as `prompt`; an unexpected exception ends as `code`; a config error is raised.
 - [ ] The hand-written tool JSON schemas match the Pydantic argument models and contain no `$ref`.
+- [ ] Two workers claiming at the same time get different runs (`SKIP LOCKED`, PostgreSQL test).
+- [ ] A `running` run with a stale heartbeat is requeued; a stopped run resumes without repeating any answer-model call.
+- [ ] The budget is checked before every call; verification reserves `AGENT_MAX_TURNS` and refunds unused turns; running out ends the run as `partial`.
+- [ ] An unknown category fails the run with `data: ...`; a missing key or model fails it with `config: ...` (no traceback); an unexpected exception with `code: ...`.
+- [ ] Run metrics (inclusion with Wilson CI per model and overall, label counts and shares, errors by type, tokens, cost only when prices are set) are computed from stored rows.
 - [ ] SPEC.md matches the implemented behaviour.
 
 ---

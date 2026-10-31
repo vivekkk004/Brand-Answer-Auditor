@@ -32,3 +32,26 @@ def build_client(provider: Provider, settings: Settings, model: str | None = Non
             raise ProviderConfigError("OPENAI_API_KEY is not set")
         return OpenAIClient(api_key=settings.openai_api_key.get_secret_value(), **common)
     raise ProviderConfigError(f"unknown provider {provider!r}")
+
+
+ANSWER_MODEL_SETTING = {
+    Provider.GEMINI: "GEMINI_ANSWER_MODEL",
+    Provider.OPENAI: "OPENAI_ANSWER_MODEL",
+}
+
+
+def build_answer_client(provider: Provider, settings: Settings) -> LLMClient:
+    """The client that writes the audited answers, using that provider's answer model."""
+    model_id = {
+        Provider.GEMINI: settings.gemini_answer_model,
+        Provider.OPENAI: settings.openai_answer_model,
+    }[provider]
+    if not model_id:
+        raise ProviderConfigError(f"no answer model given: set {ANSWER_MODEL_SETTING[provider]}")
+    return build_client(provider, settings, model=model_id)
+
+
+def build_verifier_client(settings: Settings) -> LLMClient:
+    if settings.verifier_provider is None:
+        raise ProviderConfigError("no verifier provider given: set VERIFIER_PROVIDER")
+    return build_client(settings.verifier_provider, settings)

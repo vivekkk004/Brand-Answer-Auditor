@@ -1,9 +1,11 @@
 """The `auditor` command-line tool."""
 
 import argparse
+import logging
 from collections import Counter
 from pathlib import Path
 
+from auditor.audit.worker import Worker
 from auditor.catalogue.loader import PROMPTS_FILE, load_catalogue, load_prompts, seed_database
 from auditor.catalogue.repository import InMemoryCatalogue
 from auditor.config import Settings
@@ -24,9 +26,13 @@ def main(argv: list[str] | None = None) -> int:
     check = commands.add_parser("check-eval", help="Check the eval set against the catalogue.")
     check.add_argument("--data-dir", type=Path, default=DEFAULT_DATA_DIR)
 
+    commands.add_parser("worker", help="Process queued audit runs until stopped.")
+
     args = parser.parse_args(argv)
     if args.command == "seed":
         return seed_command(args.data_dir)
+    if args.command == "worker":
+        return worker_command()
     return check_eval_command(args.data_dir)
 
 
@@ -57,4 +63,13 @@ def check_eval_command(data_dir: Path) -> int:
     print(f"Eval set {eval_set.version} is consistent.")
     print("Answers:", ", ".join(f"{count} {split}" for split, count in sorted(splits.items())))
     print("Gold labels:", ", ".join(f"{count} {label}" for label, count in sorted(labels.items())))
+    return 0
+
+
+def worker_command() -> int:
+    settings = Settings()
+    logging.basicConfig(level=settings.log_level, format="%(asctime)s %(levelname)s %(message)s")
+    worker = Worker(make_session_factory(make_engine(settings.database_url)), settings)
+    worker.check_config()  # fail now, not on the first run
+    worker.run_forever()
     return 0

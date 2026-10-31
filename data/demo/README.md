@@ -10,7 +10,7 @@ real brand name is accidental. Source URLs point at `example.com` on purpose.
 | `brands.csv` | 6 fictional earbud brands |
 | `brand_aliases.csv` | Other names each brand may appear under in an answer |
 | `brand_facts.csv` | Synthetic facts: prices per market (IN in INR, US in USD), battery life with conditions, ANC, IP rating, warranty per market, release year |
-| `prompts.csv` | 6 shopping prompts, each tied to a market |
+| `prompts.csv` | 6 shopping prompts in category `earbuds`, each tied to a market |
 | `eval_set.json` | 16 hand-written AI-style answers (12 `dev`, 4 `holdout`) with gold claims: exact quote, label, cited fact IDs |
 
 The eval answers include deliberate traps: market (US warranty quoted for India),

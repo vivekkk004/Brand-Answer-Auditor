@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     # Code that needs them raises a `config` error when they are missing.
     verifier_provider: Provider | None = None
     verifier_model: str = ""
+    # The models that write the audited answers, one per provider.
+    gemini_answer_model: str = ""
+    openai_answer_model: str = ""
 
     llm_timeout_seconds: float = Field(default=30.0, gt=0)
     llm_max_retries: int = Field(default=3, ge=0, le=10)
@@ -33,6 +36,10 @@ class Settings(BaseSettings):
     # USD per 1 million tokens. Cost is only reported when both are set.
     input_token_price_per_million: Decimal | None = Field(default=None, ge=0)
     output_token_price_per_million: Decimal | None = Field(default=None, ge=0)
+
+    # Worker: how often to look for queued runs, and when a running run counts as abandoned.
+    worker_poll_seconds: float = Field(default=5.0, gt=0)
+    stale_run_seconds: float = Field(default=900.0, gt=0)
 
     log_level: str = "INFO"
 

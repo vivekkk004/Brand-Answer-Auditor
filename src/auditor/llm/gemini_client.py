@@ -53,7 +53,7 @@ class GeminiClient:
         required_tool: str | None = None,
     ) -> ModelResponse:
         config = types.GenerateContentConfig(
-            system_instruction=system,
+            system_instruction=system or None,
             temperature=self._temperature,
             tools=[types.Tool(function_declarations=[to_gemini_function(t) for t in tools])]
             if tools
