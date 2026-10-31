@@ -270,6 +270,12 @@ fail with error type "prompt"
 - Exponential backoff: up to `LLM_MAX_RETRIES` retries (default 3) after the first
   attempt, waiting 1 s, 2 s, 4 s, ... plus a random jitter of 0–0.5 s.
 - The sleep function is injectable, so tests run instantly.
+- The SDKs' own retries are turned off (OpenAI `max_retries=0`, Gemini retry `attempts=1`),
+  so this policy is the only retry loop and latency numbers include every attempt.
+- Each provider's errors are mapped to four kinds: transient (retried), timeout (a
+  transient error that also sets `timed_out`), permanent (not retried), and config
+  (401/403 or missing key/model; not retried). For Gemini, timeouts and network failures
+  arrive as raw `httpx`/`httpx2` exceptions and are mapped the same way.
 - The same policy applies to the target model in audit runs.
 
 ### 4.9 Saving: all or nothing
@@ -280,7 +286,8 @@ fail with error type "prompt"
   `status = verification_failed` and the `error_type`, so failures can be counted.
 - Model call metadata (call number, attempts, latency, input/output tokens, outcome) is
   stored per call for metrics. Token counts come from the provider's usage data; if the
-  provider gives none, they are stored as null, never estimated.
+  provider gives none, they are stored as null, never estimated. Gemini "thinking" tokens
+  are billed as output, so they count toward output tokens and are also stored separately.
 
 ---
 
