@@ -341,32 +341,51 @@ result (4.2) and the model may recover. Only running out of turns turns it into 
 ### 6.1 Authentication and isolation
 
 - Every `/v1/*` endpoint needs `Authorization: Bearer <api-key>`. `/healthz` does not.
-- API keys are created by a command-line script that prints the key **once**. Only the
-  **SHA-256 hash** of the key is stored. To check a request, code hashes the given key
-  and looks up the hash. Plain keys are never stored or logged.
-- Missing or invalid key → `401`.
+- Keys are created with `auditor create-client <name>`, which prints the key **once**.
+  A key is `baa_` + `secrets.token_urlsafe(32)` (256 random bits). The prefix lets secret
+  scanners recognise a leaked key. Only the **SHA-256 hash** is stored; a request's key
+  is hashed and looked up. A fast hash is enough because the key is random, not chosen
+  by a person. Plain keys are never stored or logged.
+- Missing, malformed or unknown key → `401` with `WWW-Authenticate: Bearer`. Auth is
+  checked before the request body.
 - Each audit run, answer and review item belongs to one client. Asking for another
   client's resource returns `404` (not `403`), so clients cannot learn what exists.
 
 ### 6.2 Error body
 
+Every error, including validation errors and unknown routes, uses one shape:
+
 ```json
-{"error": {"code": "not_found", "message": "Audit run not found."}}
+{"error": {"code": "not_found", "message": "audit run not found"}}
 ```
 
-Verification failures add `"error_type"` (section 5) and `"answer_id"`.
+Validation errors (`422`, code `validation_error`) add `details` (field location and
+message). Verification failures add `error_type` (section 5) and `answer_id`. A `500`
+gives a generic message; the details stay in the stored answer.
+
+All timestamps in responses are UTC with an explicit offset.
 
 ### 6.3 Endpoints
 
 | method & path | purpose | success | errors |
 |---------------|---------|---------|--------|
-| `GET /healthz` | Liveness and database check. | `200 {"status": "ok"}` | `503` database unreachable |
-| `POST /v1/verify` | Verify one answer text now (synchronous). Saves the answer, claims and review items. | `201` answer with claims | `401`; `422` invalid body (empty/too long text); `502` `provider` or `prompt` failure; `503` `config` failure; `500` `tool`, `data` or `code` failure |
-| `POST /v1/audit-runs` | Queue an audit run (body = run config, 6.4). Needs `Idempotency-Key` header. | `202` new run (status `queued`); `200` same key and same body → the existing run | `400` missing `Idempotency-Key`; `401`; `409` same key with a different body; `422` invalid run config |
-| `GET /v1/audit-runs/{id}` | Run status, counts and metrics (section 7). | `200` | `401`; `404` |
-| `GET /v1/answers/{id}` | One answer: text, status, error type, brands mentioned, claims with offsets, labels, fact IDs, rationale. | `200` | `401`; `404` |
-| `GET /v1/review-items?status=` | List review items. `status` is `open`, `confirmed` or `dismissed` (optional). `limit` (default 50, max 200) and `offset`. | `200` list | `401`; `422` invalid query |
-| `PATCH /v1/review-items/{id}` | Resolve an item. Body: `{"status": "confirmed" \| "dismissed", "note": "..."}`. | `200` updated item | `401`; `404`; `409` item already resolved; `422` invalid body |
+| `GET /healthz` | Liveness plus a database ping. | `200 {"status": "ok"}` | `503 {"status": "unavailable"}` database unreachable |
+| `POST /v1/verify` | Verify one answer text now (synchronous). Body: `text` (1–20,000 chars), optional `market`, `prompt_version` (`v1`/`v2`). The answer is saved **before** the model is called, so failed attempts are stored too. | `200` answer with claims and exchanges | `401`; `422` invalid body; `502` provider error (`provider_error`) or invalid model output (`invalid_model_output`, from `prompt` or `tool`); `504` provider timeout; `503` verifier not configured (`config`); `500` `code` or `data`. Every verification error body carries `answer_id` |
+| `POST /v1/audit-runs` | Queue an audit run (body = run config, 6.4). Needs `Idempotency-Key` header (1–200 chars). | `202` new run, with `Location: /v1/audit-runs/{id}`; `200` + `Idempotent-Replayed: true` for the same key and same body | `400` missing `Idempotency-Key`; `401`; `409` same key with a different body; `422` invalid run config (including `max_model_calls` above 5,000) or no prompts match (`no_matching_prompts`) |
+| `GET /v1/audit-runs/{id}` | Run status, config, model calls, metrics (section 7), failure reason. | `200` | `401`; `404`; `422` malformed ID |
+| `GET /v1/answers/{id}` | One answer: text, status, error, brands mentioned, claims with offsets, labels, fact IDs, rationale, usage, and the verifier conversation (`exchanges`). | `200` | `401`; `404`; `422` malformed ID |
+| `GET /v1/review-items?status=` | List review items with their claims. `status` is `open`, `confirmed` or `dismissed` (optional). `limit` (default 50, max 200) and `offset`. | `200` list | `401`; `422` invalid query |
+| `PATCH /v1/review-items/{id}` | Record a decision. Body: `{"decision": "confirmed" \| "dismissed", "note": "..."}`. | `200` updated item | `401`; `404`; `409` already decided (a decision is final, so the audit trail cannot be rewritten); `422` invalid body |
+
+The canonical request body for idempotency is the validated run config with defaults
+filled in, serialised as JSON with sorted keys. So two bodies that mean the same thing
+(different key order, or a default written out) count as the same body. A race between
+two requests with the same key is settled by the unique constraint: the loser rolls
+back and replays the winner's run.
+
+Run the API with `uvicorn auditor.api.app:create_app --factory`. The verifier client is
+built per request, so missing verifier settings give `503` on `/v1/verify` instead of
+stopping the API from starting.
 
 ### 6.4 Audit runs
 
@@ -495,7 +514,7 @@ Fixed value sets (statuses, labels, error types, attributes, providers) are Pyth
 | `prompts` | prompt ID, category, text, market |
 | `api_clients` | client name and the SHA-256 hash of its API key (one key per client in v1) |
 | `audit_runs` | client, idempotency key + request hash (unique per client), status, run config (JSON), `model_calls` / `max_model_calls`, metrics (JSON), failure reason, created/started/heartbeat/finished times |
-| `answers` | client, run (empty for `/v1/verify`), prompt, provider/model, repeat index, market, text, status, error type and message, brands mentioned, verifier provider/model, prompt version, turns, latency, `timed_out`, token usage (JSON); unique on (run, prompt, model, repeat index) |
+| `answers` | client, run (empty for `/v1/verify`), prompt, provider/model, repeat index, market, text, status, error type and message, brands mentioned, verifier provider/model, prompt version, turns, latency, `timed_out`, token usage (JSON), verifier conversation (`exchanges`, JSON); unique on (run, prompt, model, repeat index) |
 | `claims` | answer, quote, start/end offsets, brand, product, attribute, label, cited fact IDs, rationale |
 | `review_items` | client, claim (one item per claim), status, note, timestamps |
 
@@ -611,6 +630,10 @@ copied from a generated report.
 - [ ] The budget is checked before every call; verification reserves `AGENT_MAX_TURNS` and refunds unused turns; running out ends the run as `partial`.
 - [ ] An unknown category fails the run with `data: ...`; a missing key or model fails it with `config: ...` (no traceback); an unexpected exception with `code: ...`.
 - [ ] Run metrics (inclusion with Wilson CI per model and overall, label counts and shares, errors by type, tokens, cost only when prices are set) are computed from stored rows.
+- [ ] Responses use one error shape; `401` carries `WWW-Authenticate: Bearer`.
+- [ ] `/v1/verify` maps failures to `502` / `504` / `503` / `500`, stores the failed attempt, and returns its `answer_id`.
+- [ ] Idempotency: same key + same canonical body replays (`200`, `Idempotent-Replayed`); a different body is `409`; another client's identical key creates its own run; a lost race returns the winner.
+- [ ] A reviewed item cannot be decided twice (`409`).
 - [ ] SPEC.md matches the implemented behaviour.
 
 ---

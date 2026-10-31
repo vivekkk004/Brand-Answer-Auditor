@@ -178,6 +178,8 @@ class Answer(Base):
     # Token counts as reported by the provider, never estimated:
     # {"generation": {...}, "verification": {...}} with input/output/thinking keys.
     usage: Mapped[dict] = mapped_column(JSON, default=dict)
+    # The verifier's whole conversation (messages and tool calls), for review and debugging.
+    exchanges: Mapped[list | None] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
 

@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from sqlalchemy.orm import Session, sessionmaker
 
-from auditor.catalogue.loader import load_catalogue
+from auditor.catalogue.loader import PROMPTS_FILE, load_catalogue, load_prompts, seed_database
 from auditor.catalogue.schema import CatalogueData
 from auditor.db.models import Base
 from auditor.db.session import make_engine, make_session_factory
@@ -31,3 +31,13 @@ def session_factory(tmp_path: Path) -> Iterator[sessionmaker[Session]]:
     Base.metadata.create_all(engine)
     yield make_session_factory(engine)
     engine.dispose()
+
+
+@pytest.fixture
+def seeded(
+    session_factory: sessionmaker[Session], demo_catalogue: CatalogueData
+) -> sessionmaker[Session]:
+    """A database with the demo catalogue and prompts loaded."""
+    with session_factory.begin() as session:
+        seed_database(session, demo_catalogue, load_prompts(DEMO_DIR / PROMPTS_FILE))
+    return session_factory

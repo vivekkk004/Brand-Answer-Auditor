@@ -19,6 +19,8 @@ dependencies = [
     # google-genai raises raw httpx/httpx2 exceptions for timeouts and network errors.
     "httpx>=0.28",
     "httpx2>=2.16",
+    "fastapi>=0.162",
+    "uvicorn>=0.54",
 ]
 
 [project.optional-dependencies]

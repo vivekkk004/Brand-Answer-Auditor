@@ -185,8 +185,8 @@ def _process(
             config = RunConfig.model_validate(run.config)
         except ValidationError as exc:
             raise RunDataError(f"invalid run config: {exc.error_count()} problem(s)") from exc
-        prompts = _select_prompts(session, config)
-        catalogue = _load_catalogue(session)
+        prompts = select_prompts(session, config)
+        catalogue = load_catalogue_snapshot(session)
 
     # Build every client before the first call, so a missing key or model fails the run
     # at once instead of after half the answers have been paid for.
@@ -266,7 +266,7 @@ def _process(
     return _finish(session_factory, run_id, RunStatus.COMPLETED, settings, now)
 
 
-def _select_prompts(session: Session, config: RunConfig) -> list[PromptRow]:
+def select_prompts(session: Session, config: RunConfig) -> list[PromptRow]:
     prompts = session.scalars(
         select(db.Prompt).where(db.Prompt.category == config.category).order_by(db.Prompt.id)
     ).all()
@@ -281,7 +281,7 @@ def _select_prompts(session: Session, config: RunConfig) -> list[PromptRow]:
     return [PromptRow(id=p.id, text=p.text, market=p.market) for p in prompts]
 
 
-def _load_catalogue(session: Session) -> CatalogueData:
+def load_catalogue_snapshot(session: Session) -> CatalogueData:
     sql = SqlCatalogue(session)
     brands = sql.list_brands()
     facts = [fact for brand in brands for fact in sql.get_brand_facts(brand.brand_id)]

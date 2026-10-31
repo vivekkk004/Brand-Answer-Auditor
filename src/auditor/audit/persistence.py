@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from auditor.agent.schemas import VerificationResult
 from auditor.db import models as db
 from auditor.enums import AnswerStatus, ClaimLabel, Provider
-from auditor.llm.types import TokenUsage
+from auditor.llm.types import Message, TokenUsage
 
 
 def save_verification(
@@ -33,6 +33,7 @@ def save_verification(
     answer.timed_out = result.timed_out
     # A new dict, so SQLAlchemy sees the JSON column change.
     answer.usage = {**answer.usage, "verification": usage_dict(result.tokens)}
+    answer.exchanges = [message_dict(message) for message in result.exchanges]
 
     if not result.ok:
         answer.status = AnswerStatus.VERIFICATION_FAILED
@@ -66,4 +67,19 @@ def usage_dict(tokens: TokenUsage) -> dict[str, int | None]:
         "input": tokens.input_tokens,
         "output": tokens.output_tokens,
         "thinking": tokens.thinking_tokens,
+    }
+
+
+def message_dict(message: Message) -> dict:
+    """A conversation message as plain JSON. The provider's raw turn is left out: it is
+    SDK-specific and only needed while the conversation is running."""
+    return {
+        "role": message.role,
+        "content": message.content,
+        "tool_calls": [
+            {"id": call.id, "name": call.name, "arguments": call.arguments}
+            for call in message.tool_calls
+        ],
+        "tool_call_id": message.tool_call_id,
+        "tool_name": message.tool_name,
     }

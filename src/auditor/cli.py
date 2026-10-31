@@ -5,6 +5,7 @@ import logging
 from collections import Counter
 from pathlib import Path
 
+from auditor.api.security import create_api_client
 from auditor.audit.worker import Worker
 from auditor.catalogue.loader import PROMPTS_FILE, load_catalogue, load_prompts, seed_database
 from auditor.catalogue.repository import InMemoryCatalogue
@@ -28,11 +29,16 @@ def main(argv: list[str] | None = None) -> int:
 
     commands.add_parser("worker", help="Process queued audit runs until stopped.")
 
+    client = commands.add_parser("create-client", help="Create an API client and print its key.")
+    client.add_argument("name")
+
     args = parser.parse_args(argv)
     if args.command == "seed":
         return seed_command(args.data_dir)
     if args.command == "worker":
         return worker_command()
+    if args.command == "create-client":
+        return create_client_command(args.name)
     return check_eval_command(args.data_dir)
 
 
@@ -72,4 +78,14 @@ def worker_command() -> int:
     worker = Worker(make_session_factory(make_engine(settings.database_url)), settings)
     worker.check_config()  # fail now, not on the first run
     worker.run_forever()
+    return 0
+
+
+def create_client_command(name: str) -> int:
+    engine = make_engine(Settings().database_url)
+    with make_session_factory(engine).begin() as session:
+        client, key = create_api_client(session, name)
+        client_id = client.id
+    print(f"Created client {name!r} ({client_id}).")
+    print(f"API key (shown once, store it now): {key}")
     return 0
