@@ -151,10 +151,17 @@ How qualifiers are applied:
 - The answer text (1 to 20,000 characters).
 - Optional `market` (for example `US`), used by the rules in 3.3.
 
-The answer text is **untrusted input**. It is placed inside clear delimiters in the user
-message, and the model is told to treat it as data. The tools are read-only, so the
-worst a malicious answer can do is cause wrong labels, which the review queue and the
-evaluation harness are there to catch.
+The answer text is **untrusted input**. It is placed inside `<ai_answer>` tags in the user
+message, and the model is told it is data, not instructions. A `</ai_answer>` inside the
+answer is neutralised so the answer cannot close the tag early (quotes are still matched
+against the original text). The tools are read-only, so the worst a malicious answer can
+do is cause wrong labels, which the review queue and the evaluation harness are there to
+catch.
+
+The system prompt is versioned. `v1` states the rules in section 3; `v2` is `v1` plus
+exactly one addition, a qualifier checklist (market and currency, conditions, comparisons,
+units and numbers, similar models), so any score change between them has one cause.
+Every result records its prompt version.
 
 ### 4.2 Tools
 
@@ -165,8 +172,10 @@ evaluation harness are there to catch.
 | `submit_claims(claims)` | final answer | list of claims (4.3) | `{accepted: true}` or `{accepted: false, problems: [...]}` |
 
 - Read-only tools never change the database.
-- If `get_brand_facts` gets an unknown `brand_id`, it returns an error **result** to the
-  model (for example `{"error": "unknown brand_id"}`). This is a normal turn, not a failure.
+- Tool problems come back to the model as an error **result** (`{"error": "..."}`), never as
+  an exception: an unknown tool name, arguments that are not a JSON object, unexpected or
+  missing arguments, an unknown `brand_id`, or even a crash inside the tool. The model can
+  correct itself on its next turn. Each such error is counted (see 4.7).
 - The model may request several read-only tools in one response; code runs them all, in
   order, and returns all results together.
 - `submit_claims` must be the **only** tool call in its response. If it is mixed with
@@ -179,7 +188,6 @@ Each claim:
 | field | type | notes |
 |-------|------|-------|
 | `quote` | string | Exact text copied from the answer. |
-| `occurrence` | int, default 1 | Which occurrence of `quote` is meant, if the text repeats it. |
 | `brand_id` | string | A catalogue brand ID. |
 | `product` | string or null | Product/model name as written in the catalogue; null for brand-wide claims. |
 | `attribute` | enum | One of the attributes in 3.1. |
@@ -187,7 +195,7 @@ Each claim:
 | `fact_ids` | list of strings | Cited facts (rules in 3.4). |
 | `rationale` | string, ≤ 300 chars | One or two sentences, for the human reviewer. |
 
-An empty list is valid: it means the answer has no claims.
+Unexpected fields are rejected. An empty list is valid: it means the answer has no claims.
 
 ### 4.4 The model quotes, the code computes offsets
 
@@ -200,14 +208,20 @@ The model returns an exact quote; code finds it in the answer and stores:
 using Python string indices, so `answer_text[start:end] == quote` is always true for a
 saved claim. Matching is exact and case-sensitive. No normalisation.
 
+**Repeated text.** If the quote appears more than once, code picks an occurrence no earlier
+claim has used, preferring the first one at or after the end of the previous claim
+(models list claims in reading order). If every occurrence is already used, that is a
+validation problem.
+
 ### 4.5 Validation of `submit_claims`
 
-Code checks every submission. Each failed check becomes one plain-English problem line,
-for example `claim 2: quote not found in answer text`.
+Code checks every submission and collects **all** problems in one pass (the model has
+at most one repair turn, so it must see them all at once). Each becomes one plain-English
+line, for example `claim 2: quote not found in the answer text`.
 
-1. The input matches the schema in 4.3 (Pydantic).
-2. `quote` is not empty and appears in the answer at least `occurrence` times.
-3. No two claims resolve to the same `(start, end)` span.
+1. The input matches the schema in 4.3 (Pydantic) and is a JSON object.
+2. `quote` is not empty and appears in the answer.
+3. Some occurrence of `quote` is not already used by an earlier claim (4.4).
 4. `brand_id` exists in the catalogue.
 5. `supported` and `contradicted` claims cite at least one fact ID.
 6. Every cited fact ID was returned by `get_brand_facts` in this conversation.
@@ -237,20 +251,28 @@ content of an existing fact ID, so old citations always point to what the model 
 ### 4.7 The loop
 
 ```
-call = 0
-while call < 4:
-    call += 1
+turn = 0
+while turn < max_turns:
+    turn += 1
     response = model(conversation, tools)        # with timeout and retries (4.8)
-    if response asks for read-only tools:
-        run them, append results, continue
+    if response has no tool call:
+        append a nudge ("reply with a tool call ..."), continue
     if response calls submit_claims:
-        problems = validate(...)
-        if no problems: save everything in ONE transaction (4.9); return success
+        problems = validate(...)                 # all problems at once (4.5)
+        if no problems: return success           # the caller saves it (4.9)
         append {accepted: false, problems}, continue
-    if response is plain text (no tool call):
-        append "You must finish by calling submit_claims.", continue
-fail with error type "prompt"
+    run the read-only tool calls, append their results, continue
+out of turns:
+    if no submission was ever attempted and some tool calls failed: fail as "tool"
+    otherwise: fail as "prompt"
 ```
+
+The verifier never raises, with one exception: a `config` error (missing key or model,
+credentials rejected) is raised to the caller, because it would fail every answer the
+same way and the whole run should stop. Any other unexpected exception becomes a `code`
+failure, so one answer can never crash a run. Results carry: ok, claims, model, prompt
+version, turns used, tokens, latency, error type and detail, `timed_out`, and the full
+conversation (for debugging).
 
 - **At most 4 model calls per answer** (`AGENT_MAX_TURNS`, default 4, may be lowered but
   never raised above 4). A typical answer needs 3: list brands, fetch facts
@@ -298,14 +320,16 @@ Every failed answer has exactly one error type.
 | type       | meaning |
 |------------|---------|
 | `provider` | The model API failed: a retryable error that survived all retries, a non-retryable provider error, or an empty/blocked response. |
-| `prompt`   | The model replied but did not produce a valid `submit_claims` within 4 calls. |
-| `tool`     | One of our tools crashed while running (for example a database error inside `get_brand_facts`). |
+| `prompt`   | The model replied but did not produce a valid `submit_claims` within the turn limit (invalid submissions, or no tool calls at all). |
+| `tool`     | The turn limit was reached without any submission while tool calls kept failing (unknown tool, bad arguments, unknown brand, or a tool crash). |
 | `data`     | Stored data is invalid or inconsistent (for example a malformed catalogue fact). |
 | `config`   | Settings are missing or wrong: missing API key, unknown provider, or credentials rejected by the provider (401/403). |
 | `code`     | An unexpected bug in our code: any exception we did not classify. |
 
-Bad tool arguments from the model are not a `tool` error; they are returned to the model
-as an error result (4.2). If the model never recovers, the answer fails as `prompt`.
+A single failed tool call is not a failure: it is returned to the model as an error
+result (4.2) and the model may recover. Only running out of turns turns it into `tool`.
+`config` errors are raised to the caller and stop the run (4.7); `timed_out` is set on a
+`provider` failure whose last attempt timed out.
 
 ---
 
@@ -522,6 +546,11 @@ copied from a generated report.
 - [ ] Seeding twice inserts nothing the second time; a seed that would change an existing fact is refused.
 - [ ] The SQL and in-memory catalogues return identical brands and facts.
 - [ ] `auditor check-eval` passes: every gold quote appears exactly once in its answer and every cited fact ID exists.
+- [ ] A submission citing a fact ID the agent never looked up is rejected, and the model can repair it on the next turn.
+- [ ] A repeated sentence quoted by two claims gets two different spans; a third copy is rejected.
+- [ ] All validation problems in one submission are returned together.
+- [ ] Failed tool calls until the turn limit end as `tool`; invalid output or no tool calls end as `prompt`; an unexpected exception ends as `code`; a config error is raised.
+- [ ] The hand-written tool JSON schemas match the Pydantic argument models and contain no `$ref`.
 - [ ] SPEC.md matches the implemented behaviour.
 
 ---

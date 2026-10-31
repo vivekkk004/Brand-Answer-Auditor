@@ -14,9 +14,14 @@ from auditor.llm.errors import (
     TransientProviderError,
     error_for_status,
 )
-from auditor.llm.types import Message, ModelResponse, TokenUsage, ToolCall, ToolSpec
-
-UNPARSED_KEY = "_unparsed"
+from auditor.llm.types import (
+    UNPARSED_ARGUMENTS_KEY,
+    Message,
+    ModelResponse,
+    TokenUsage,
+    ToolCall,
+    ToolSpec,
+)
 
 
 class OpenAIClient:
@@ -128,9 +133,9 @@ def parse_arguments(raw: str) -> dict[str, Any]:
     try:
         value = json.loads(raw)
     except json.JSONDecodeError:
-        return {UNPARSED_KEY: raw}
+        return {UNPARSED_ARGUMENTS_KEY: raw}
     if not isinstance(value, dict):
-        return {UNPARSED_KEY: raw}
+        return {UNPARSED_ARGUMENTS_KEY: raw}
     return value
 
 
@@ -147,6 +152,6 @@ def map_openai_error(exc: openai.OpenAIError) -> ProviderError:
 
 def _arguments_text(call: ToolCall) -> str:
     # Replay what the model actually sent, even when it was not valid JSON.
-    if set(call.arguments) == {UNPARSED_KEY}:
-        return call.arguments[UNPARSED_KEY]
+    if set(call.arguments) == {UNPARSED_ARGUMENTS_KEY}:
+        return call.arguments[UNPARSED_ARGUMENTS_KEY]
     return json.dumps(call.arguments)

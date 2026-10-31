@@ -10,6 +10,9 @@ from typing import Any, Literal, Protocol
 
 Role = Literal["user", "assistant", "tool"]
 
+# Key used in ToolCall.arguments when the model's arguments were not a JSON object.
+UNPARSED_ARGUMENTS_KEY = "_unparsed"
+
 
 @dataclass(frozen=True)
 class ToolSpec:
