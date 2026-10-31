@@ -1,0 +1,60 @@
+fact_id,brand_id,product,attribute,value,unit,market,conditions,valid_from,source_url
+aurelyn-buds-s-price-in,aurelyn,Aurelyn Buds S,price,19999,INR,IN,,2026-01-01,https://example.com/aurelyn/buds-s
+aurelyn-buds-s-price-us,aurelyn,Aurelyn Buds S,price,229,USD,US,,2026-01-01,https://example.com/aurelyn/buds-s
+aurelyn-buds-s-battery-anc-off,aurelyn,Aurelyn Buds S,battery,9,hours,,"earbuds only, ANC off",2026-01-01,https://example.com/aurelyn/buds-s
+aurelyn-buds-s-battery-anc-on,aurelyn,Aurelyn Buds S,battery,7,hours,,"earbuds only, ANC on",2026-01-01,https://example.com/aurelyn/buds-s
+aurelyn-buds-s-battery-case,aurelyn,Aurelyn Buds S,battery,32,hours,,"with charging case, ANC off",2026-01-01,https://example.com/aurelyn/buds-s
+aurelyn-buds-s-anc,aurelyn,Aurelyn Buds S,anc,yes,,,,2026-01-01,https://example.com/aurelyn/buds-s
+aurelyn-buds-s-ipx,aurelyn,Aurelyn Buds S,water_resistance,IPX4,,,,2026-01-01,https://example.com/aurelyn/buds-s
+aurelyn-buds-s-warranty-in,aurelyn,Aurelyn Buds S,warranty,12,months,IN,,2026-01-01,https://example.com/aurelyn/buds-s
+aurelyn-buds-s-warranty-us,aurelyn,Aurelyn Buds S,warranty,24,months,US,,2026-01-01,https://example.com/aurelyn/buds-s
+aurelyn-buds-s-release,aurelyn,Aurelyn Buds S,release_year,2026,,,,2026-01-01,https://example.com/aurelyn/buds-s
+brisalo-fit-price-in,brisalo,Brisalo Fit,price,2999,INR,IN,,2026-01-01,https://example.com/brisalo/fit
+brisalo-fit-price-us,brisalo,Brisalo Fit,price,39,USD,US,,2026-01-01,https://example.com/brisalo/fit
+brisalo-fit-battery,brisalo,Brisalo Fit,battery,12,hours,,earbuds only,2026-01-01,https://example.com/brisalo/fit
+brisalo-fit-battery-case,brisalo,Brisalo Fit,battery,36,hours,,with charging case,2026-01-01,https://example.com/brisalo/fit
+brisalo-fit-anc,brisalo,Brisalo Fit,anc,no,,,,2026-01-01,https://example.com/brisalo/fit
+brisalo-fit-ipx,brisalo,Brisalo Fit,water_resistance,IP67,,,,2026-01-01,https://example.com/brisalo/fit
+brisalo-fit-warranty-in,brisalo,Brisalo Fit,warranty,6,months,IN,,2026-01-01,https://example.com/brisalo/fit
+brisalo-fit-warranty-us,brisalo,Brisalo Fit,warranty,12,months,US,,2026-01-01,https://example.com/brisalo/fit
+brisalo-fit-release,brisalo,Brisalo Fit,release_year,2025,,,,2026-01-01,https://example.com/brisalo/fit
+kovalt-pulse-price-in,kovalt,Kovalt Pulse,price,4999,INR,IN,,2026-01-01,https://example.com/kovalt/pulse
+kovalt-pulse-price-us,kovalt,Kovalt Pulse,price,59,USD,US,,2026-01-01,https://example.com/kovalt/pulse
+kovalt-pulse-battery-anc-off,kovalt,Kovalt Pulse,battery,10,hours,,"earbuds only, ANC off",2026-01-01,https://example.com/kovalt/pulse
+kovalt-pulse-battery-anc-on,kovalt,Kovalt Pulse,battery,7,hours,,"earbuds only, ANC on",2026-01-01,https://example.com/kovalt/pulse
+kovalt-pulse-battery-case,kovalt,Kovalt Pulse,battery,40,hours,,"with charging case, ANC off",2026-01-01,https://example.com/kovalt/pulse
+kovalt-pulse-anc,kovalt,Kovalt Pulse,anc,yes,,,,2026-01-01,https://example.com/kovalt/pulse
+kovalt-pulse-ipx,kovalt,Kovalt Pulse,water_resistance,IPX5,,,,2026-01-01,https://example.com/kovalt/pulse
+kovalt-pulse-warranty-in,kovalt,Kovalt Pulse,warranty,12,months,IN,,2026-01-01,https://example.com/kovalt/pulse
+kovalt-pulse-warranty-us,kovalt,Kovalt Pulse,warranty,12,months,US,,2026-01-01,https://example.com/kovalt/pulse
+kovalt-pulse-release,kovalt,Kovalt Pulse,release_year,2024,,,,2026-01-01,https://example.com/kovalt/pulse
+nimbrex-echo3-price-in,nimbrex,Nimbrex Echo 3,price,9999,INR,IN,,2026-01-01,https://example.com/nimbrex/echo-3
+nimbrex-echo3-price-us,nimbrex,Nimbrex Echo 3,price,119,USD,US,,2026-01-01,https://example.com/nimbrex/echo-3
+nimbrex-echo3-battery-anc-off,nimbrex,Nimbrex Echo 3,battery,8,hours,,"earbuds only, ANC off",2026-01-01,https://example.com/nimbrex/echo-3
+nimbrex-echo3-battery-anc-on,nimbrex,Nimbrex Echo 3,battery,5.5,hours,,"earbuds only, ANC on",2026-01-01,https://example.com/nimbrex/echo-3
+nimbrex-echo3-battery-case,nimbrex,Nimbrex Echo 3,battery,28,hours,,"with charging case, ANC off",2026-01-01,https://example.com/nimbrex/echo-3
+nimbrex-echo3-anc,nimbrex,Nimbrex Echo 3,anc,yes,,,,2026-01-01,https://example.com/nimbrex/echo-3
+nimbrex-echo3-ipx,nimbrex,Nimbrex Echo 3,water_resistance,IPX4,,,,2026-01-01,https://example.com/nimbrex/echo-3
+nimbrex-echo3-warranty-in,nimbrex,Nimbrex Echo 3,warranty,12,months,IN,,2026-01-01,https://example.com/nimbrex/echo-3
+nimbrex-echo3-release,nimbrex,Nimbrex Echo 3,release_year,2025,,,,2026-01-01,https://example.com/nimbrex/echo-3
+tavora-lite-price-in,tavora,Tavora Lite,price,1999,INR,IN,,2026-01-01,https://example.com/tavora/lite
+tavora-lite-battery,tavora,Tavora Lite,battery,6,hours,,earbuds only,2026-01-01,https://example.com/tavora/lite
+tavora-lite-battery-case,tavora,Tavora Lite,battery,24,hours,,with charging case,2026-01-01,https://example.com/tavora/lite
+tavora-lite-anc,tavora,Tavora Lite,anc,no,,,,2026-01-01,https://example.com/tavora/lite
+tavora-lite-ipx,tavora,Tavora Lite,water_resistance,IPX4,,,,2026-01-01,https://example.com/tavora/lite
+tavora-lite-warranty-in,tavora,Tavora Lite,warranty,12,months,IN,,2026-01-01,https://example.com/tavora/lite
+tavora-lite-release,tavora,Tavora Lite,release_year,2024,,,,2026-01-01,https://example.com/tavora/lite
+zentro-air2-price-in,zentro,Zentro Air 2,price,7999,INR,IN,,2026-01-01,https://example.com/zentro/air-2
+zentro-air2-price-us,zentro,Zentro Air 2,price,99,USD,US,,2026-01-01,https://example.com/zentro/air-2
+zentro-air2-battery-anc-off,zentro,Zentro Air 2,battery,8,hours,,"earbuds only, ANC off",2026-01-01,https://example.com/zentro/air-2
+zentro-air2-battery-anc-on,zentro,Zentro Air 2,battery,6,hours,,"earbuds only, ANC on",2026-01-01,https://example.com/zentro/air-2
+zentro-air2-battery-case,zentro,Zentro Air 2,battery,30,hours,,"with charging case, ANC off",2026-01-01,https://example.com/zentro/air-2
+zentro-air2-anc,zentro,Zentro Air 2,anc,yes,,,,2026-01-01,https://example.com/zentro/air-2
+zentro-air2-ipx,zentro,Zentro Air 2,water_resistance,IPX4,,,,2026-01-01,https://example.com/zentro/air-2
+zentro-air2-warranty-in,zentro,Zentro Air 2,warranty,12,months,IN,,2026-01-01,https://example.com/zentro/air-2
+zentro-air2-warranty-us,zentro,Zentro Air 2,warranty,24,months,US,,2026-01-01,https://example.com/zentro/air-2
+zentro-air2-release,zentro,Zentro Air 2,release_year,2025,,,,2026-01-01,https://example.com/zentro/air-2
+zentro-air2pro-price-us,zentro,Zentro Air 2 Pro,price,149,USD,US,,2026-01-01,https://example.com/zentro/air-2-pro
+zentro-air2pro-battery-anc-on,zentro,Zentro Air 2 Pro,battery,7,hours,,"earbuds only, ANC on",2026-01-01,https://example.com/zentro/air-2-pro
+zentro-air2pro-anc,zentro,Zentro Air 2 Pro,anc,yes,,,,2026-01-01,https://example.com/zentro/air-2-pro
+zentro-air2pro-ipx,zentro,Zentro Air 2 Pro,water_resistance,IPX5,,,,2026-01-01,https://example.com/zentro/air-2-pro

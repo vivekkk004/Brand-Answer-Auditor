@@ -1,0 +1,228 @@
+{
+  "version": "demo-v1",
+  "answers": [
+    {
+      "answer_id": "e01",
+      "split": "dev",
+      "prompt_id": "p01",
+      "market": "IN",
+      "text": "Here are three good picks under ₹10,000 in India. The Zentro Air 2 costs ₹7,999 and has active noise cancelling. It lasts about 8 hours per charge, or 30 hours with the case. The Kovalt Pulse is cheaper at ₹4,999 and is rated IPX5, so it handles sweat well. If you want a sporty option, the Brisalo Fit has great bass and a snug fit.",
+      "gold_claims": [
+        {"quote": "The Zentro Air 2 costs ₹7,999", "brand_id": "zentro", "label": "supported", "fact_ids": ["zentro-air2-price-in"]},
+        {"quote": "has active noise cancelling", "brand_id": "zentro", "label": "supported", "fact_ids": ["zentro-air2-anc"]},
+        {"quote": "It lasts about 8 hours per charge", "brand_id": "zentro", "label": "supported", "fact_ids": ["zentro-air2-battery-anc-off"], "note": "No condition stated; matches the ANC-off figure."},
+        {"quote": "30 hours with the case", "brand_id": "zentro", "label": "supported", "fact_ids": ["zentro-air2-battery-case"]},
+        {"quote": "The Kovalt Pulse is cheaper at ₹4,999", "brand_id": "kovalt", "label": "supported", "fact_ids": ["kovalt-pulse-price-in", "zentro-air2-price-in"], "note": "Price plus comparison; both parts confirmed."},
+        {"quote": "is rated IPX5", "brand_id": "kovalt", "label": "supported", "fact_ids": ["kovalt-pulse-ipx"]}
+      ]
+    },
+    {
+      "answer_id": "e02",
+      "split": "dev",
+      "prompt_id": "p02",
+      "market": "US",
+      "text": "For noise cancelling under $150, the Zentro Air 2 is a strong choice at $99. It offers up to 6 hours with ANC on. The Aurelyn Buds S are excellent but cost $229, which is over budget. The Nimbrex Echo 3 sells for $119 and comes with a 2-year warranty in the US. Many reviewers call the Kovalt Pulse the best value pick.",
+      "gold_claims": [
+        {"quote": "the Zentro Air 2 is a strong choice at $99", "brand_id": "zentro", "label": "supported", "fact_ids": ["zentro-air2-price-us"]},
+        {"quote": "It offers up to 6 hours with ANC on", "brand_id": "zentro", "label": "supported", "fact_ids": ["zentro-air2-battery-anc-on"]},
+        {"quote": "The Aurelyn Buds S are excellent but cost $229", "brand_id": "aurelyn", "label": "supported", "fact_ids": ["aurelyn-buds-s-price-us"]},
+        {"quote": "The Nimbrex Echo 3 sells for $119", "brand_id": "nimbrex", "label": "supported", "fact_ids": ["nimbrex-echo3-price-us"]},
+        {"quote": "comes with a 2-year warranty in the US", "brand_id": "nimbrex", "label": "unknown", "fact_ids": [], "note": "Missing-evidence trap: only an India warranty fact exists."}
+      ]
+    },
+    {
+      "answer_id": "e03",
+      "split": "dev",
+      "prompt_id": "p03",
+      "market": "US",
+      "text": "If battery life is your priority, the Kovalt Pulse gives you 10 hours on a single charge and 40 hours with the case. The Brisalo Fit manages 12 hours per charge, which actually beats the Kovalt Pulse. The Zentro Air 2 offers 8 hours with ANC on. The Nimbrex Echo 3 lasts around 28 hours including the case.",
+      "gold_claims": [
+        {"quote": "the Kovalt Pulse gives you 10 hours on a single charge", "brand_id": "kovalt", "label": "supported", "fact_ids": ["kovalt-pulse-battery-anc-off"]},
+        {"quote": "40 hours with the case", "brand_id": "kovalt", "label": "supported", "fact_ids": ["kovalt-pulse-battery-case"]},
+        {"quote": "The Brisalo Fit manages 12 hours per charge", "brand_id": "brisalo", "label": "supported", "fact_ids": ["brisalo-fit-battery"]},
+        {"quote": "which actually beats the Kovalt Pulse", "brand_id": "brisalo", "label": "supported", "fact_ids": ["brisalo-fit-battery", "kovalt-pulse-battery-anc-off"], "note": "Comparison: 12 hours beats 10 hours."},
+        {"quote": "The Zentro Air 2 offers 8 hours with ANC on", "brand_id": "zentro", "label": "contradicted", "fact_ids": ["zentro-air2-battery-anc-on"], "note": "Condition trap: 8 hours is the ANC-off figure; ANC on is 6 hours."},
+        {"quote": "The Nimbrex Echo 3 lasts around 28 hours including the case", "brand_id": "nimbrex", "label": "supported", "fact_ids": ["nimbrex-echo3-battery-case"]}
+      ]
+    },
+    {
+      "answer_id": "e04",
+      "split": "dev",
+      "prompt_id": "p04",
+      "market": "IN",
+      "text": "For the gym, the Brisalo Fit is hard to beat. It is rated IP67, so sweat and rain are no problem, and it costs just ₹2,999. The Tavora Lite is another budget pick at ₹1,999 with an IPX4 rating. Note that neither model has active noise cancelling. The Brisalo Fit also comes with a 1-year warranty in India.",
+      "gold_claims": [
+        {"quote": "It is rated IP67", "brand_id": "brisalo", "label": "supported", "fact_ids": ["brisalo-fit-ipx"]},
+        {"quote": "it costs just ₹2,999", "brand_id": "brisalo", "label": "supported", "fact_ids": ["brisalo-fit-price-in"]},
+        {"quote": "The Tavora Lite is another budget pick at ₹1,999", "brand_id": "tavora", "label": "supported", "fact_ids": ["tavora-lite-price-in"]},
+        {"quote": "with an IPX4 rating", "brand_id": "tavora", "label": "supported", "fact_ids": ["tavora-lite-ipx"]},
+        {"quote": "neither model has active noise cancelling", "brand_id": "brisalo", "label": "supported", "fact_ids": ["brisalo-fit-anc", "tavora-lite-anc"]},
+        {"quote": "The Brisalo Fit also comes with a 1-year warranty in India", "brand_id": "brisalo", "label": "contradicted", "fact_ids": ["brisalo-fit-warranty-in"], "note": "Market trap: 1 year is the US warranty; India is 6 months."}
+      ]
+    },
+    {
+      "answer_id": "e05",
+      "split": "dev",
+      "prompt_id": "p05",
+      "market": "US",
+      "text": "The Zentro Air 2 and the Kovalt Pulse are close rivals. The Zentro Air 2 is more expensive than the Kovalt Pulse, at $99 versus $59. Battery life favours the Kovalt Pulse, with 10 hours against 8 hours on the Zentro. Both have active noise cancelling. The Zentro Air 2 has the better water resistance rating.",
+      "gold_claims": [
+        {"quote": "The Zentro Air 2 is more expensive than the Kovalt Pulse, at $99 versus $59", "brand_id": "zentro", "label": "supported", "fact_ids": ["zentro-air2-price-us", "kovalt-pulse-price-us"]},
+        {"quote": "Battery life favours the Kovalt Pulse, with 10 hours against 8 hours on the Zentro", "brand_id": "kovalt", "label": "supported", "fact_ids": ["kovalt-pulse-battery-anc-off", "zentro-air2-battery-anc-off"]},
+        {"quote": "Both have active noise cancelling", "brand_id": "zentro", "label": "supported", "fact_ids": ["zentro-air2-anc", "kovalt-pulse-anc"]},
+        {"quote": "The Zentro Air 2 has the better water resistance rating", "brand_id": "zentro", "label": "contradicted", "fact_ids": ["zentro-air2-ipx", "kovalt-pulse-ipx"], "note": "Comparison-direction trap: IPX4 is lower than IPX5."}
+      ]
+    },
+    {
+      "answer_id": "e06",
+      "split": "dev",
+      "prompt_id": "p06",
+      "market": "IN",
+      "text": "For warranty in India, the Aurelyn Buds S comes with a 2-year warranty. The Kovalt Pulse includes 12 months of cover. Tavora Lite buyers get a 1-year warranty too. The Zentro Air 2 is covered for 24 months.",
+      "gold_claims": [
+        {"quote": "the Aurelyn Buds S comes with a 2-year warranty", "brand_id": "aurelyn", "label": "contradicted", "fact_ids": ["aurelyn-buds-s-warranty-in"], "note": "Market trap: 2 years is the US warranty; India is 12 months."},
+        {"quote": "The Kovalt Pulse includes 12 months of cover", "brand_id": "kovalt", "label": "supported", "fact_ids": ["kovalt-pulse-warranty-in"]},
+        {"quote": "Tavora Lite buyers get a 1-year warranty too", "brand_id": "tavora", "label": "supported", "fact_ids": ["tavora-lite-warranty-in"]},
+        {"quote": "The Zentro Air 2 is covered for 24 months", "brand_id": "zentro", "label": "contradicted", "fact_ids": ["zentro-air2-warranty-in"], "note": "Market trap: 24 months is the US warranty."}
+      ]
+    },
+    {
+      "answer_id": "e07",
+      "split": "dev",
+      "prompt_id": "p02",
+      "market": "US",
+      "text": "Top noise-cancelling picks under $150: the Kovalt Pulse at $59 and the Nimbrex Echo 3 at $119. The Nimbrex Echo 3 delivers about 5.5 hours with ANC on and is rated IPX4. The Tavora Lite costs $25 in the US and is a good backup pair. The Kovalt Pulse launched in 2024.",
+      "gold_claims": [
+        {"quote": "the Kovalt Pulse at $59", "brand_id": "kovalt", "label": "supported", "fact_ids": ["kovalt-pulse-price-us"]},
+        {"quote": "the Nimbrex Echo 3 at $119", "brand_id": "nimbrex", "label": "supported", "fact_ids": ["nimbrex-echo3-price-us"]},
+        {"quote": "The Nimbrex Echo 3 delivers about 5.5 hours with ANC on", "brand_id": "nimbrex", "label": "supported", "fact_ids": ["nimbrex-echo3-battery-anc-on"]},
+        {"quote": "is rated IPX4", "brand_id": "nimbrex", "label": "supported", "fact_ids": ["nimbrex-echo3-ipx"]},
+        {"quote": "The Tavora Lite costs $25 in the US", "brand_id": "tavora", "label": "unknown", "fact_ids": [], "note": "Currency trap: only an INR price exists, so USD cannot be checked."},
+        {"quote": "The Kovalt Pulse launched in 2024", "brand_id": "kovalt", "label": "supported", "fact_ids": ["kovalt-pulse-release"]}
+      ]
+    },
+    {
+      "answer_id": "e08",
+      "split": "dev",
+      "prompt_id": "p01",
+      "market": "IN",
+      "text": "The Aurelyn Buds S is the premium option at ₹19,999, released in 2026. The Nimbrex Echo 3 costs ₹9,999 and gives roughly 8 hours with noise cancelling switched off. The Zentro Air 2 Pro is rated IPX4. The Zentro Air 2 Pro also supports wireless charging.",
+      "gold_claims": [
+        {"quote": "The Aurelyn Buds S is the premium option at ₹19,999", "brand_id": "aurelyn", "label": "supported", "fact_ids": ["aurelyn-buds-s-price-in"]},
+        {"quote": "released in 2026", "brand_id": "aurelyn", "label": "supported", "fact_ids": ["aurelyn-buds-s-release"]},
+        {"quote": "The Nimbrex Echo 3 costs ₹9,999", "brand_id": "nimbrex", "label": "supported", "fact_ids": ["nimbrex-echo3-price-in"]},
+        {"quote": "gives roughly 8 hours with noise cancelling switched off", "brand_id": "nimbrex", "label": "supported", "fact_ids": ["nimbrex-echo3-battery-anc-off"]},
+        {"quote": "The Zentro Air 2 Pro is rated IPX4", "brand_id": "zentro", "label": "contradicted", "fact_ids": ["zentro-air2pro-ipx"], "note": "Model trap: IPX4 is the Air 2; the Air 2 Pro is IPX5."},
+        {"quote": "The Zentro Air 2 Pro also supports wireless charging", "brand_id": "zentro", "label": "unknown", "fact_ids": [], "note": "No wireless-charging fact in the catalogue."}
+      ]
+    },
+    {
+      "answer_id": "e09",
+      "split": "dev",
+      "prompt_id": "p03",
+      "market": "US",
+      "text": "The Aurelyn Buds S runs for 9 hours with ANC off and 7 hours with it on. With the case you get about 32 hours in total. The Tavora Lite only manages 4 hours, so it is not ideal for long trips. The Zentro Air 2 Pro lasts 7 hours with ANC on.",
+      "gold_claims": [
+        {"quote": "The Aurelyn Buds S runs for 9 hours with ANC off", "brand_id": "aurelyn", "label": "supported", "fact_ids": ["aurelyn-buds-s-battery-anc-off"]},
+        {"quote": "7 hours with it on", "brand_id": "aurelyn", "label": "supported", "fact_ids": ["aurelyn-buds-s-battery-anc-on"]},
+        {"quote": "With the case you get about 32 hours in total", "brand_id": "aurelyn", "label": "supported", "fact_ids": ["aurelyn-buds-s-battery-case"]},
+        {"quote": "The Tavora Lite only manages 4 hours", "brand_id": "tavora", "label": "contradicted", "fact_ids": ["tavora-lite-battery"], "note": "No condition stated, and 4 hours matches no fact (6 or 24)."},
+        {"quote": "The Zentro Air 2 Pro lasts 7 hours with ANC on", "brand_id": "zentro", "label": "supported", "fact_ids": ["zentro-air2pro-battery-anc-on"]}
+      ]
+    },
+    {
+      "answer_id": "e10",
+      "split": "dev",
+      "prompt_id": "p04",
+      "market": "IN",
+      "text": "For workouts, the Kovalt Pulse is a solid choice: it is rated IPX5 and costs ₹4,999. The Brisalo Fit is cheaper than the Kovalt Pulse and adds active noise cancelling. The Tavora Lite was released in 2023.",
+      "gold_claims": [
+        {"quote": "it is rated IPX5", "brand_id": "kovalt", "label": "supported", "fact_ids": ["kovalt-pulse-ipx"]},
+        {"quote": "costs ₹4,999", "brand_id": "kovalt", "label": "supported", "fact_ids": ["kovalt-pulse-price-in"]},
+        {"quote": "The Brisalo Fit is cheaper than the Kovalt Pulse", "brand_id": "brisalo", "label": "supported", "fact_ids": ["brisalo-fit-price-in", "kovalt-pulse-price-in"]},
+        {"quote": "adds active noise cancelling", "brand_id": "brisalo", "label": "contradicted", "fact_ids": ["brisalo-fit-anc"]},
+        {"quote": "The Tavora Lite was released in 2023", "brand_id": "tavora", "label": "contradicted", "fact_ids": ["tavora-lite-release"]}
+      ]
+    },
+    {
+      "answer_id": "e11",
+      "split": "dev",
+      "prompt_id": "p06",
+      "market": "IN",
+      "text": "Warranty terms differ a lot. The Nimbrex Echo 3 has a 12-month warranty in India. In the US, the Kovalt Pulse also carries a 12-month warranty. The Brisalo Fit offers 6 months of warranty in India. Aurelyn is known for great customer support.",
+      "gold_claims": [
+        {"quote": "The Nimbrex Echo 3 has a 12-month warranty in India", "brand_id": "nimbrex", "label": "supported", "fact_ids": ["nimbrex-echo3-warranty-in"]},
+        {"quote": "In the US, the Kovalt Pulse also carries a 12-month warranty", "brand_id": "kovalt", "label": "supported", "fact_ids": ["kovalt-pulse-warranty-us"], "note": "The claim states its own market, which overrides the request market."},
+        {"quote": "The Brisalo Fit offers 6 months of warranty in India", "brand_id": "brisalo", "label": "supported", "fact_ids": ["brisalo-fit-warranty-in"]}
+      ]
+    },
+    {
+      "answer_id": "e12",
+      "split": "dev",
+      "prompt_id": "p05",
+      "market": "US",
+      "text": "Comparing price, the Kovalt Pulse costs $59 while the Zentro Air 2 costs $109. The Zentro Air 2 lasts longer with ANC on than the Kovalt Pulse. Both are rated at least IPX4. The Zentro Air 2 came out in 2025.",
+      "gold_claims": [
+        {"quote": "the Kovalt Pulse costs $59", "brand_id": "kovalt", "label": "supported", "fact_ids": ["kovalt-pulse-price-us"]},
+        {"quote": "the Zentro Air 2 costs $109", "brand_id": "zentro", "label": "contradicted", "fact_ids": ["zentro-air2-price-us"], "note": "Unhedged number must match exactly: the fact is $99."},
+        {"quote": "The Zentro Air 2 lasts longer with ANC on than the Kovalt Pulse", "brand_id": "zentro", "label": "contradicted", "fact_ids": ["zentro-air2-battery-anc-on", "kovalt-pulse-battery-anc-on"], "note": "Comparison-direction trap: 6 hours is less than 7."},
+        {"quote": "Both are rated at least IPX4", "brand_id": "zentro", "label": "supported", "fact_ids": ["zentro-air2-ipx", "kovalt-pulse-ipx"]},
+        {"quote": "The Zentro Air 2 came out in 2025", "brand_id": "zentro", "label": "supported", "fact_ids": ["zentro-air2-release"]}
+      ]
+    },
+    {
+      "answer_id": "e13",
+      "split": "holdout",
+      "prompt_id": "p01",
+      "market": "IN",
+      "text": "Under ₹10,000, the Zentro Air 2 at ₹7,999 is the pick for noise cancelling. It is rated IPX4 and comes with a 12-month warranty in India. The Nimbrex Echo 3 costs ₹8,999. Brisalo Fit buyers get a 12-month warranty.",
+      "gold_claims": [
+        {"quote": "the Zentro Air 2 at ₹7,999", "brand_id": "zentro", "label": "supported", "fact_ids": ["zentro-air2-price-in"]},
+        {"quote": "It is rated IPX4", "brand_id": "zentro", "label": "supported", "fact_ids": ["zentro-air2-ipx"]},
+        {"quote": "comes with a 12-month warranty in India", "brand_id": "zentro", "label": "supported", "fact_ids": ["zentro-air2-warranty-in"]},
+        {"quote": "The Nimbrex Echo 3 costs ₹8,999", "brand_id": "nimbrex", "label": "contradicted", "fact_ids": ["nimbrex-echo3-price-in"]},
+        {"quote": "Brisalo Fit buyers get a 12-month warranty", "brand_id": "brisalo", "label": "contradicted", "fact_ids": ["brisalo-fit-warranty-in"], "note": "No market in the claim, so the request market (IN) applies: 6 months."}
+      ]
+    },
+    {
+      "answer_id": "e14",
+      "split": "holdout",
+      "prompt_id": "p02",
+      "market": "US",
+      "text": "The Aurelyn Buds S costs about $230 in the US and offers 7 hours with ANC on. The Kovalt Pulse is far cheaper than the Aurelyn Buds S. The Nimbrex Echo 3 supports Bluetooth 5.3.",
+      "gold_claims": [
+        {"quote": "The Aurelyn Buds S costs about $230 in the US", "brand_id": "aurelyn", "label": "supported", "fact_ids": ["aurelyn-buds-s-price-us"], "note": "Hedged number: $229 is within 5% of $230."},
+        {"quote": "offers 7 hours with ANC on", "brand_id": "aurelyn", "label": "supported", "fact_ids": ["aurelyn-buds-s-battery-anc-on"]},
+        {"quote": "The Kovalt Pulse is far cheaper than the Aurelyn Buds S", "brand_id": "kovalt", "label": "supported", "fact_ids": ["kovalt-pulse-price-us", "aurelyn-buds-s-price-us"]},
+        {"quote": "The Nimbrex Echo 3 supports Bluetooth 5.3", "brand_id": "nimbrex", "label": "unknown", "fact_ids": [], "note": "No Bluetooth fact in the catalogue."}
+      ]
+    },
+    {
+      "answer_id": "e15",
+      "split": "holdout",
+      "prompt_id": "p03",
+      "market": "US",
+      "text": "The Brisalo Fit gives 36 hours with its case. The Tavora Lite gets 24 hours with the case, less than the Brisalo Fit. The Nimbrex Echo 3 offers 7 hours with ANC on.",
+      "gold_claims": [
+        {"quote": "The Brisalo Fit gives 36 hours with its case", "brand_id": "brisalo", "label": "supported", "fact_ids": ["brisalo-fit-battery-case"]},
+        {"quote": "The Tavora Lite gets 24 hours with the case", "brand_id": "tavora", "label": "supported", "fact_ids": ["tavora-lite-battery-case"]},
+        {"quote": "less than the Brisalo Fit", "brand_id": "tavora", "label": "supported", "fact_ids": ["tavora-lite-battery-case", "brisalo-fit-battery-case"]},
+        {"quote": "The Nimbrex Echo 3 offers 7 hours with ANC on", "brand_id": "nimbrex", "label": "contradicted", "fact_ids": ["nimbrex-echo3-battery-anc-on"]}
+      ]
+    },
+    {
+      "answer_id": "e16",
+      "split": "holdout",
+      "prompt_id": "p06",
+      "market": "IN",
+      "text": "In India, the Aurelyn Buds S carries a 12-month warranty. The Tavora Lite costs ₹1,999 and has no noise cancelling. The Kovalt Pulse has a 2-year warranty in India. The Zentro Air 2 Pro costs ₹12,999 in India.",
+      "gold_claims": [
+        {"quote": "the Aurelyn Buds S carries a 12-month warranty", "brand_id": "aurelyn", "label": "supported", "fact_ids": ["aurelyn-buds-s-warranty-in"]},
+        {"quote": "The Tavora Lite costs ₹1,999", "brand_id": "tavora", "label": "supported", "fact_ids": ["tavora-lite-price-in"]},
+        {"quote": "has no noise cancelling", "brand_id": "tavora", "label": "supported", "fact_ids": ["tavora-lite-anc"]},
+        {"quote": "The Kovalt Pulse has a 2-year warranty in India", "brand_id": "kovalt", "label": "contradicted", "fact_ids": ["kovalt-pulse-warranty-in"]},
+        {"quote": "The Zentro Air 2 Pro costs ₹12,999 in India", "brand_id": "zentro", "label": "unknown", "fact_ids": [], "note": "Missing evidence: the Air 2 Pro has only a US price."}
+      ]
+    }
+  ]
+}
