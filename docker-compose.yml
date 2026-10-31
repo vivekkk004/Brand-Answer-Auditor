@@ -1,0 +1,63 @@
+# Local stack: PostgreSQL, a one-off migration job, the API and the worker.
+#
+#   docker compose up --build
+#   docker compose run --rm api auditor seed
+#   docker compose run --rm api auditor create-api-key me
+#
+# Model settings and API keys come from a local .env file (see .env.example).
+# The database password below is for this local stack only.
+
+x-app: &app
+  build: .
+  image: brand-answer-auditor:local
+  env_file:
+    - path: .env
+      required: false
+  environment:
+    DATABASE_URL: postgresql+psycopg://auditor:${POSTGRES_PASSWORD:-auditor}@postgres:5432/auditor
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: auditor
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-auditor}
+      POSTGRES_DB: auditor
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auditor -d auditor"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Runs once and exits; the API and worker start only after it succeeds.
+  migrate:
+    <<: *app
+    command: ["alembic", "upgrade", "head"]
+    healthcheck:
+      disable: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    <<: *app
+    ports:
+      - "8000:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  worker:
+    <<: *app
+    command: ["auditor", "worker"]
+    # The image's HEALTHCHECK calls the API; the worker has no HTTP server.
+    healthcheck:
+      disable: true
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:

@@ -483,7 +483,7 @@ fails with a `config` error. `.env.example` lists every variable.
 
 | variable | required | notes |
 |----------|----------|-------|
-| `DATABASE_URL` | yes | `postgresql+psycopg://...` in production; `sqlite:///...` for local use. |
+| `DATABASE_URL` | yes | `postgresql+psycopg://...` in production; `sqlite:///...` for local use. A `postgres://` or `postgresql://` URL (as hosts such as Fly give it) is rewritten to use the psycopg driver. |
 | `GEMINI_API_KEY` | if Gemini is used | Held as a secret; never printed. |
 | `OPENAI_API_KEY` | if OpenAI is used | Held as a secret; never printed. |
 | `VERIFIER_PROVIDER` | to verify | `gemini` or `openai`. |
@@ -643,7 +643,9 @@ Fails (exit 1) if the mean joint F1 or the mean contradicted recall drops by mor
 - [ ] Inclusion uses only `verified` + `verification_failed` answers as `n`.
 - [ ] The eval harness computes every metric in 7.3 from model outputs and the gold set and writes a report with the metadata listed there.
 - [ ] Docker image builds and starts; `GET /healthz` returns `200`.
-- [ ] `fly.toml` contains no secrets; secrets are set with `fly secrets`.
+- [ ] `fly.toml` contains no secrets; secrets are set with `fly secrets`. Its release command runs `alembic upgrade head`.
+- [ ] CI runs lint, `auditor check-data`, the full test suite with a PostgreSQL 16 service, `alembic upgrade head` + `alembic check`, and a Docker build. The live eval workflow runs only by hand.
+- [ ] `auditor worker` without verifier settings exits with one `config:` line, not a traceback.
 - [ ] The catalogue loader rejects bad CSV (wrong header, wrong field count, unknown brand, duplicate ID or alias, value that breaks the rules in 4.6) with the file name and line number.
 - [ ] Seeding twice inserts nothing the second time; a seed that would change an existing fact is refused.
 - [ ] The SQL and in-memory catalogues return identical brands and facts.

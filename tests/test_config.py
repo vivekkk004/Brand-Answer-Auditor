@@ -40,6 +40,19 @@ def test_api_keys_are_hidden_when_printed() -> None:
     assert settings.gemini_api_key.get_secret_value() == "test-key"
 
 
+@pytest.mark.parametrize(
+    ("given", "expected"),
+    [
+        ("postgres://u:p@db:5432/a", "postgresql+psycopg://u:p@db:5432/a"),
+        ("postgresql://u:p@db:5432/a", "postgresql+psycopg://u:p@db:5432/a"),
+        ("postgresql+psycopg://u:p@db:5432/a", "postgresql+psycopg://u:p@db:5432/a"),
+        ("sqlite:///./auditor.db", "sqlite:///./auditor.db"),
+    ],
+)
+def test_postgres_urls_get_the_psycopg_driver(given: str, expected: str) -> None:
+    assert Settings(_env_file=None, database_url=given).database_url == expected
+
+
 def test_more_than_four_agent_turns_is_rejected() -> None:
     with pytest.raises(ValueError):
         make_settings(agent_max_turns=5)

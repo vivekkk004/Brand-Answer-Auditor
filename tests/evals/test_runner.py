@@ -173,3 +173,13 @@ def test_eval_cli_writes_a_flagged_report(
 
 def test_check_data_cli_passes_on_the_demo_data() -> None:
     assert main(["check-data", "--data-dir", str(DEMO_DIR)]) == 0
+
+
+def test_worker_without_verifier_settings_exits_with_one_line(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("DATABASE_URL", "sqlite://")
+
+    assert main(["worker", "--once"]) == 2
+    output = capsys.readouterr().out
+    assert output.splitlines() == ["config: no verifier provider given: set VERIFIER_PROVIDER"]

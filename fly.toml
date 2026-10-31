@@ -1,0 +1,43 @@
+# Fly.io deployment. One image, two processes (api, worker).
+#
+# Secrets are NEVER written here. Set them with, for example:
+#   fly secrets set DATABASE_URL=... GEMINI_API_KEY=... VERIFIER_PROVIDER=gemini \
+#     VERIFIER_MODEL=... GEMINI_ANSWER_MODEL=...
+# A postgres:// DATABASE_URL is fine: the app adds the psycopg driver itself.
+
+app = "brand-answer-auditor"  # change to your own app name
+primary_region = "bom"        # change to the region nearest to you
+
+[build]
+  dockerfile = "Dockerfile"
+
+# Runs once per deploy, before new machines start. A failed migration stops the deploy.
+[deploy]
+  release_command = "alembic upgrade head"
+
+[env]
+  LOG_LEVEL = "INFO"
+
+[processes]
+  api = "uvicorn auditor.api.app:create_app --factory --host 0.0.0.0 --port 8000"
+  worker = "auditor worker"
+
+[http_service]
+  internal_port = 8000
+  processes = ["api"]
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    method = "GET"
+    path = "/healthz"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "15s"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

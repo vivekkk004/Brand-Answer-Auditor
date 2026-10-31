@@ -1,0 +1,74 @@
+# A LIVE eval calls a real model API and costs money, so it only ever runs by hand.
+name: Live eval (paid API calls)
+
+on:
+  workflow_dispatch:
+    inputs:
+      split:
+        description: "Which split to evaluate"
+        type: choice
+        options: [dev, holdout]
+        default: dev
+      repeats:
+        description: "Repeats (1-5)"
+        type: choice
+        options: ["1", "2", "3", "4", "5"]
+        default: "3"
+      prompt_version:
+        description: "Verifier prompt version"
+        type: choice
+        options: [v1, v2]
+        default: v1
+
+permissions:
+  contents: read
+
+# Never two paid runs at once.
+concurrency:
+  group: live-eval
+  cancel-in-progress: false
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # The eval needs no database, but every command reads DATABASE_URL.
+      DATABASE_URL: sqlite:///unused.db
+      VERIFIER_PROVIDER: ${{ vars.VERIFIER_PROVIDER }}
+      VERIFIER_MODEL: ${{ vars.VERIFIER_MODEL }}
+      INPUT_TOKEN_PRICE_PER_MILLION: ${{ vars.INPUT_TOKEN_PRICE_PER_MILLION }}
+      OUTPUT_TOKEN_PRICE_PER_MILLION: ${{ vars.OUTPUT_TOKEN_PRICE_PER_MILLION }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      # Inputs go through environment variables, never pasted into the script, so an
+      # input value cannot inject shell commands.
+      SPLIT: ${{ inputs.split }}
+      REPEATS: ${{ inputs.repeats }}
+      PROMPT_VERSION: ${{ inputs.prompt_version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -e .
+
+      - name: Check the data first
+        run: auditor check-data
+
+      - name: Run the eval
+        run: auditor eval --split "$SPLIT" --repeats "$REPEATS" --prompt-version "$PROMPT_VERSION" --out-dir reports
+
+      # Uploaded even when the eval failed, so a partial report can still be inspected.
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-reports-${{ github.run_id }}
+          path: reports/
+          if-no-files-found: warn
+          retention-days: 90

@@ -29,6 +29,7 @@ from auditor.db.models import utc_now
 from auditor.db.session import make_engine, make_session_factory
 from auditor.evals.dataset import DATASET_FILE, Dataset, DatasetError, load_dataset
 from auditor.evals.runner import CompareRefused, compare_reports, report_markdown, run_eval
+from auditor.llm.errors import ProviderConfigError
 from auditor.llm.factory import build_verifier_client
 
 DEFAULT_DATA_DIR = Path("data/demo")
@@ -119,7 +120,12 @@ def worker_command(once: bool) -> int:
     settings = Settings()
     logging.basicConfig(level=settings.log_level, format="%(asctime)s %(levelname)s %(message)s")
     worker = Worker(make_session_factory(make_engine(settings.database_url)), settings)
-    worker.check_config()  # fail now, not on the first run
+    try:
+        worker.check_config()  # fail now, not on the first run
+    except ProviderConfigError as exc:
+        # An expected setup problem: one clear line, no traceback.
+        print(f"config: {exc}")
+        return 2
     if once:
         run_id = worker.run_once()
         print(f"Processed run {run_id}." if run_id else "No queued run.")

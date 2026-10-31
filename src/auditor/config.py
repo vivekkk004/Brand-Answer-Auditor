@@ -43,6 +43,16 @@ class Settings(BaseSettings):
 
     log_level: str = "INFO"
 
+    @field_validator("database_url")
+    @classmethod
+    def _use_the_psycopg_driver(cls, value: str) -> str:
+        """Hosts such as Fly hand out postgres://... URLs, but SQLAlchemy needs to be told
+        the driver (postgresql+psycopg://...). Rewrite so a deploy does not fail on it."""
+        for prefix in ("postgres://", "postgresql://"):
+            if value.startswith(prefix):
+                return "postgresql+psycopg://" + value.removeprefix(prefix)
+        return value
+
     @field_validator("llm_temperature", mode="before")
     @classmethod
     def _none_string_means_no_temperature(cls, value: object) -> object:

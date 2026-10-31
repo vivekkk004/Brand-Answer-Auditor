@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "brand-answer-auditor"
 version = "0.1.0"
 description = "Audits what AI assistants say about brands: inclusion and claim accuracy."
-readme = "SPEC.md"
+readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "pydantic>=2.14",
