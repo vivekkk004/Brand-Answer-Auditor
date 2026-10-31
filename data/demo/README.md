@@ -18,10 +18,10 @@ conditions (ANC-off battery quoted as ANC-on), comparison direction, a similar m
 (Air 2 vs Air 2 Pro), currency with no matching fact, and missing evidence that must be
 labelled `unknown`, not `contradicted`.
 
-Check that every gold quote is in its answer and every cited fact exists:
+Check that every gold quote can be located in its answer and every cited fact exists:
 
 ```
-auditor check-eval
+auditor check-data
 ```
 
 Load the catalogue and prompts into the database at `DATABASE_URL`:

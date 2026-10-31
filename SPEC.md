@@ -341,7 +341,7 @@ result (4.2) and the model may recover. Only running out of turns turns it into 
 ### 6.1 Authentication and isolation
 
 - Every `/v1/*` endpoint needs `Authorization: Bearer <api-key>`. `/healthz` does not.
-- Keys are created with `auditor create-client <name>`, which prints the key **once**.
+- Keys are created with `auditor create-api-key <name>`, which prints the key **once**.
   A key is `baa_` + `secrets.token_urlsafe(32)` (256 random bits). The prefix lets secret
   scanners recognise a leaked key. Only the **SHA-256 hash** is stored; a request's key
   is hashed and looked up. A fast hash is enough because the key is random, not chosen
@@ -569,27 +569,55 @@ both prices are set and tokens were reported.
 
 ### 7.3 Evaluation metrics (offline harness)
 
-The harness runs the verifier on a gold set: synthetic answers with hand-labelled claims
-(exact spans + labels) written using the rules in section 3. Each report records the date,
-git commit, provider, model, settings and gold-set version. README numbers may only be
-copied from a generated report.
+The harness (`auditor eval`) runs the verifier on a gold set: synthetic answers with
+hand-labelled claims written using the rules in section 3 (`data/demo/eval_set.json`).
+
+**Dataset.** Loading is strict and lists every problem: invalid JSON, unknown fields, bad
+labels, a decisive label without facts, duplicate answer IDs, unknown prompt IDs, quotes
+that cannot be located, unknown brands and unknown fact IDs. Gold offsets are computed
+with the **same** `locate_quote` the validator uses (4.4), so a repeated sentence maps to
+the same occurrence for gold and prediction. Selecting answers by ID rejects unknown
+IDs. The dataset's fingerprint is the SHA-256 of its canonical JSON (sorted keys, no
+whitespace), so formatting and line endings do not change it.
+
+**Scoring** (micro-averaged: totals are summed over all answers before dividing):
 
 - **Exact-span extraction P/R/F1.** A predicted claim matches a gold claim only if `start`
   and `end` are both equal. Precision = matches / predicted claims; recall = matches /
   gold claims; F1 = 2PR / (P + R).
-- **Joint F1 (span + label).** Same as above, but a match also needs the same label.
+- **Joint P/R/F1 (span + label).** Same as above, but a match also needs the same label.
 - **Recall on contradicted.** Of gold `contradicted` claims, the share predicted with the
   exact span **and** the label `contradicted`. This is the most important number: a missed
   contradiction never reaches the review queue.
-- **Failure rate by type.** Failed answers / all answers, overall and per error type.
-- **Consistency across repeats.** Each gold answer is verified `R ≥ 3` times.
-  - *Span-label agreement*: for each gold span, the share of repeats that give the most
-    common outcome (a label, or "not extracted"); averaged over spans.
-  - *Identical-output rate*: share of answers where all `R` outputs have exactly the same
-    set of `(start, end, label)`.
-- **Latency p50/p95**, nearest-rank method, for whole-answer verification time (including
-  retries) and for single model calls.
-- **Tokens**: input and output tokens per answer (total and mean), from provider usage data.
+- A **failed answer predicts nothing**, so its gold claims count as missed.
+- For error analysis the report lists, per answer and repeat: missed gold claims,
+  wrong-label matches and unmatched predictions.
+
+**Runs.** One eval = one split × `R` repeats (default 3), because one run could be lucky.
+
+- Each metric is reported as **mean, min and max** over the repeats.
+- **Failure rate**: failed answers / (answers × repeats), overall and per error type.
+- **Consistency**: share of answers that got exactly the same set of
+  `(start, end, label)` in every repeat (a failure is its own outcome); `null` for one repeat.
+- **Latency p50/p95** (nearest-rank) of whole-answer verification time, including retries.
+- **Tokens** (totals and mean per answer) from provider usage data; **cost** only when
+  both prices are set.
+
+**Honesty rules.**
+
+- Each report records the date, git commit (and whether there were uncommitted changes),
+  provider, model, prompt version, settings, dataset version, fingerprint, split and
+  answer IDs.
+- `is_real_run` is decided from the client's type (a Gemini or OpenAI client), never
+  passed in, so a fake client cannot produce a "real" report. A fake run's Markdown
+  starts with `NOT A REAL RESULT`.
+- Reports are written to `reports/`, which git ignores. No result number is committed;
+  README numbers may only be copied from a generated real report.
+
+**Comparing** (`auditor compare BASELINE CANDIDATE --max-drop 0.02`): refused (exit 2) if
+either report is not a real run, or the dataset fingerprint, split or answer IDs differ.
+Fails (exit 1) if the mean joint F1 or the mean contradicted recall drops by more than
+`max_drop`; otherwise passes (exit 0) and prints every metric's change.
 
 ---
 
@@ -619,7 +647,9 @@ copied from a generated report.
 - [ ] The catalogue loader rejects bad CSV (wrong header, wrong field count, unknown brand, duplicate ID or alias, value that breaks the rules in 4.6) with the file name and line number.
 - [ ] Seeding twice inserts nothing the second time; a seed that would change an existing fact is refused.
 - [ ] The SQL and in-memory catalogues return identical brands and facts.
-- [ ] `auditor check-eval` passes: every gold quote appears exactly once in its answer and every cited fact ID exists.
+- [ ] `auditor check-data` passes: every gold quote can be located (with the validator's `locate_quote`) and every cited fact ID exists; a broken gold file is rejected with every problem listed.
+- [ ] Scoring maths matches a hand-worked example; a failed answer predicts nothing.
+- [ ] A fake client's eval report has `is_real_run: false` and its Markdown starts with `NOT A REAL RESULT`; `compare` refuses it, refuses different datasets/splits, and detects a regression.
 - [ ] A submission citing a fact ID the agent never looked up is rejected, and the model can repair it on the next turn.
 - [ ] A repeated sentence quoted by two claims gets two different spans; a third copy is rejected.
 - [ ] All validation problems in one submission are returned together.
