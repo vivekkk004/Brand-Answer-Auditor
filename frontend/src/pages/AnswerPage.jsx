@@ -7,10 +7,12 @@ import HighlightedAnswer from '../components/domain/HighlightedAnswer'
 import { AnswerStatusBadge } from '../components/domain/StatusBadges'
 import Badge from '../components/ui/Badge'
 import Card from '../components/ui/Card'
+import DescriptionList from '../components/ui/DescriptionList'
 import EmptyState from '../components/ui/EmptyState'
 import ErrorBanner from '../components/ui/ErrorBanner'
+import Icon from '../components/ui/Icon'
+import LoadingState from '../components/ui/LoadingState'
 import PageHeader from '../components/ui/PageHeader'
-import Spinner from '../components/ui/Spinner'
 import { fetchAnswer, selectAnswerById } from '../features/answers/answersSlice'
 import { PATHS, runPath } from '../routes/paths'
 import { EMPTY, formatDateTime, formatMs, formatNumber, humanize, shortId } from '../utils/format'
@@ -34,16 +36,7 @@ function Details({ answer }) {
     ['Verification tokens', tokensText(answer.usage?.verification)],
     ['Created', formatDateTime(answer.created_at)],
   ]
-  return (
-    <dl className="divide-y divide-slate-100 text-sm">
-      {rows.map(([label, value]) => (
-        <div key={label} className="flex justify-between gap-4 py-2">
-          <dt className="text-slate-500">{label}</dt>
-          <dd className="text-right font-medium text-slate-900">{value}</dd>
-        </div>
-      ))}
-    </dl>
-  )
+  return <DescriptionList items={rows} />
 }
 
 export default function AnswerPage() {
@@ -64,7 +57,7 @@ export default function AnswerPage() {
         {status === 'failed' ? (
           <ErrorBanner error={error} title="Could not load this answer" onRetry={() => dispatch(fetchAnswer(answerId))} />
         ) : (
-          <Spinner label="Loading answer…" />
+          <LoadingState label="Loading answer…" />
         )}
       </>
     )
@@ -79,7 +72,7 @@ export default function AnswerPage() {
       <PageHeader
         title={
           <span className="flex flex-wrap items-center gap-3">
-            Answer <span className="font-mono text-xl text-slate-500">{shortId(answer.id)}</span>
+            Answer <span className="font-mono text-lg text-slate-500 sm:text-xl">{shortId(answer.id)}</span>
             <AnswerStatusBadge status={answer.status} />
           </span>
         }
@@ -97,7 +90,11 @@ export default function AnswerPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <Card title="Answer text" description="Claims are highlighted by label. Click one to find it in the list.">
+          <Card
+            title="Answer text"
+            description="Claims are highlighted by label. Click one to find it in the list."
+            icon={<Icon name="search" className="h-5 w-5" />}
+          >
             {answer.text ? (
               <HighlightedAnswer
                 text={answer.text}
@@ -109,7 +106,11 @@ export default function AnswerPage() {
               <p className="text-sm text-slate-500">No text was received from the answer model.</p>
             )}
           </Card>
-          <Card title="Claims" description={`${answer.claims.length} claim(s)`}>
+          <Card
+            title="Claims"
+            description={`${answer.claims.length} claim(s)`}
+            icon={<Icon name="verify" className="h-5 w-5" />}
+          >
             {answer.status === 'verified' ? (
               <ClaimList claims={answer.claims} activeClaimId={activeClaimId} onSelectClaim={setActiveClaimId} />
             ) : (
@@ -128,7 +129,7 @@ export default function AnswerPage() {
         </div>
 
         <div className="space-y-6">
-          <Card title="Brands mentioned">
+          <Card title="Brands mentioned" icon={<Icon name="sparkles" className="h-5 w-5" />}>
             {answer.brands_mentioned.length ? (
               <div className="flex flex-wrap gap-2">
                 {answer.brands_mentioned.map((brand) => (
@@ -141,7 +142,7 @@ export default function AnswerPage() {
               <p className="text-sm text-slate-500">No catalogue brand was mentioned.</p>
             )}
           </Card>
-          <Card title="Details">
+          <Card title="Details" icon={<Icon name="info" className="h-5 w-5" />}>
             <Details answer={answer} />
           </Card>
         </div>
@@ -151,14 +152,16 @@ export default function AnswerPage() {
         className="mt-6"
         title="Agent conversation"
         description="Every message, tool call and tool result the verifier exchanged — the trace for debugging."
+        icon={<Icon name="tool" className="h-5 w-5" />}
       >
         <details className="group">
-          <summary className="cursor-pointer text-sm font-medium text-indigo-700 select-none hover:underline">
+          <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-lg text-sm font-medium text-indigo-700 transition-colors select-none hover:text-indigo-500 [&::-webkit-details-marker]:hidden">
+            <Icon name="chevronDown" className="h-4 w-4 -rotate-90 transition-transform duration-200 group-open:rotate-0" />
             {answer.exchanges?.length
               ? `Show ${answer.exchanges.length} step(s)`
               : 'No conversation recorded'}
           </summary>
-          <div className="mt-5">
+          <div className="animate-page-in mt-5">
             <AgentConversation exchanges={answer.exchanges} />
           </div>
         </details>

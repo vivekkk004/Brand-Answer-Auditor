@@ -21,10 +21,10 @@ export default function ClaimList({ claims, activeClaimId, onSelectClaim }) {
           <button
             type="button"
             onClick={onSelectClaim ? () => onSelectClaim(claim.id) : undefined}
-            className={`w-full rounded-lg border p-4 text-left transition-colors ${
+            className={`w-full rounded-xl border p-4 text-left transition-all duration-150 ${
               activeClaimId === claim.id
-                ? 'border-indigo-300 bg-indigo-50/50'
-                : 'border-slate-200 bg-white hover:border-slate-300'
+                ? 'border-indigo-300 bg-indigo-50/50 shadow-sm ring-4 ring-indigo-500/10'
+                : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
             }`}
           >
             <div className="flex flex-wrap items-center gap-2">
@@ -34,16 +34,16 @@ export default function ClaimList({ claims, activeClaimId, onSelectClaim }) {
                 {claim.product || claim.brand_id} · {humanize(claim.attribute)}
               </span>
             </div>
-            <blockquote className="mt-2 border-l-2 border-slate-200 pl-3 text-sm text-slate-800">
+            <blockquote className="mt-3 border-l-2 border-slate-200 pl-3 text-sm leading-6 text-slate-800">
               “{claim.quote}”
             </blockquote>
-            <p className="mt-2 text-sm text-slate-600">{claim.rationale}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{claim.rationale}</p>
             {claim.fact_ids.length ? (
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {claim.fact_ids.map((factId) => (
                   <code
                     key={factId}
-                    className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600"
+                    className="rounded-md bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600 ring-1 ring-slate-200/70"
                   >
                     {factId}
                   </code>

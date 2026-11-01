@@ -10,10 +10,10 @@ export default function Pagination({ offset, limit, count, onChange, disabled })
   if (!hasPrevious && !hasNext) return null
   return (
     <nav
-      className="flex items-center justify-between border-t border-slate-100 px-4 py-3"
+      className="flex items-center justify-between gap-3 border-t border-slate-100 px-5 py-3 sm:px-6"
       aria-label="Pagination"
     >
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-slate-500 tabular-nums">
         Showing {count ? offset + 1 : 0}–{offset + count}
       </p>
       <div className="flex gap-2">

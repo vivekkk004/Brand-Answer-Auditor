@@ -11,7 +11,7 @@ const TONES = {
 export default function StatCard({ label, value, hint, icon, tone = 'indigo' }) {
   const style = TONES[tone]
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-card transition-shadow hover:shadow-md">
+    <div className="surface group relative overflow-hidden p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <div className={`absolute inset-x-0 top-0 h-0.5 ${style.accent} opacity-70`} />
       <div className="flex items-start gap-4">
         {icon ? (
@@ -23,8 +23,8 @@ export default function StatCard({ label, value, hint, icon, tone = 'indigo' }) 
         ) : null}
         <div className="min-w-0">
           <p className="text-sm font-medium text-slate-500">{label}</p>
-          <p className="mt-1 truncate text-2xl font-bold tracking-tight text-slate-900">{value}</p>
-          {hint ? <p className="mt-1 text-xs text-slate-500">{hint}</p> : null}
+          <p className="mt-1 truncate text-2xl font-bold tracking-tight text-slate-900 tabular-nums">{value}</p>
+          {hint ? <p className="mt-1 text-xs leading-5 text-slate-500">{hint}</p> : null}
         </div>
       </div>
     </div>

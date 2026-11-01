@@ -17,7 +17,7 @@ function pretty(value) {
 
 function CodeBlock({ children }) {
   return (
-    <pre className="mt-2 max-h-72 overflow-auto rounded-lg bg-slate-50 p-3 text-xs leading-5 whitespace-pre-wrap text-slate-700 ring-1 ring-slate-200">
+    <pre className="mt-2 max-h-72 overflow-auto rounded-xl bg-slate-50 p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-slate-700 ring-1 ring-slate-200">
       {children}
     </pre>
   )
@@ -34,12 +34,12 @@ export default function AgentConversation({ exchanges }) {
   }
 
   return (
-    <ol className="relative space-y-4 border-l border-slate-200 pl-6">
+    <ol className="relative space-y-5 border-l-2 border-slate-100 pl-6">
       {exchanges.map((message, index) => {
         const role = ROLE[message.role] || { label: message.role, tone: 'slate' }
         return (
           <li key={index} className="relative">
-            <span className="absolute top-1.5 -left-[29px] h-2.5 w-2.5 rounded-full border-2 border-white bg-slate-300" />
+            <span className="absolute top-1.5 -left-[31px] h-3 w-3 rounded-full border-2 border-white bg-indigo-300 ring-1 ring-indigo-100" />
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone={role.tone}>{role.label}</Badge>
               {message.tool_name ? (

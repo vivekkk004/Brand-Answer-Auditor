@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useSelector } from 'react-redux'
 import { Link, Outlet } from 'react-router-dom'
 import { selectIsAuthenticated } from '../../features/auth/authSlice'
@@ -34,6 +35,8 @@ const FOOTER_COLUMNS = [
 /** Top navigation and footer for the landing page, connect page and 404. */
 export default function PublicLayout() {
   const isAuthenticated = useSelector(selectIsAuthenticated)
+  // Small screens hide the section links behind a menu button.
+  const [menuOpen, setMenuOpen] = useState(false)
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
@@ -45,7 +48,7 @@ export default function PublicLayout() {
               <a
                 key={link.href}
                 href={link.href}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-100 hover:text-slate-900"
               >
                 {link.label}
               </a>
@@ -55,7 +58,7 @@ export default function PublicLayout() {
             {isAuthenticated ? null : (
               <Link
                 to={PATHS.connect}
-                className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 sm:block"
+                className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:text-slate-900 sm:block"
               >
                 Sign in
               </Link>
@@ -64,8 +67,51 @@ export default function PublicLayout() {
               {isAuthenticated ? 'Open dashboard' : 'Connect API key'}
               <Icon name="arrowRight" className="h-3.5 w-3.5" />
             </ButtonLink>
+            <button
+              type="button"
+              onClick={() => setMenuOpen((open) => !open)}
+              className="-mr-1 rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 md:hidden"
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
+              aria-controls="public-menu"
+            >
+              <Icon name={menuOpen ? 'close' : 'menu'} />
+            </button>
           </div>
         </div>
+
+        {menuOpen ? (
+          <nav
+            id="public-menu"
+            aria-label="Main mobile"
+            className="animate-menu-in border-t border-slate-200/70 bg-white px-4 py-3 md:hidden"
+          >
+            <ul className="space-y-1">
+              {NAV_LINKS.map((link) => (
+                <li key={link.href}>
+                  <a
+                    href={link.href}
+                    onClick={() => setMenuOpen(false)}
+                    className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+              {isAuthenticated ? null : (
+                <li className="border-t border-slate-100 pt-1 sm:hidden">
+                  <Link
+                    to={PATHS.connect}
+                    onClick={() => setMenuOpen(false)}
+                    className="block rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100"
+                  >
+                    Sign in
+                  </Link>
+                </li>
+              )}
+            </ul>
+          </nav>
+        ) : null}
       </header>
 
       <main className="flex-1">
@@ -73,8 +119,8 @@ export default function PublicLayout() {
       </main>
 
       <footer className="border-t border-slate-200 bg-slate-50/80">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-4 lg:px-8">
-          <div className="md:col-span-2">
+        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:grid-cols-2 sm:px-6 sm:py-14 md:grid-cols-4 lg:px-8">
+          <div className="sm:col-span-2">
             <Logo />
             <p className="mt-4 max-w-sm text-sm leading-6 text-slate-500">
               Measures how often AI assistants recommend a brand, and checks what they claim
@@ -88,11 +134,11 @@ export default function PublicLayout() {
                 {column.links.map((link) => (
                   <li key={link.label}>
                     {link.internal ? (
-                      <Link to={link.href} className="text-sm text-slate-500 hover:text-indigo-700">
+                      <Link to={link.href} className="text-sm text-slate-500 transition-colors hover:text-indigo-700">
                         {link.label}
                       </Link>
                     ) : (
-                      <a href={link.href} className="text-sm text-slate-500 hover:text-indigo-700">
+                      <a href={link.href} className="text-sm text-slate-500 transition-colors hover:text-indigo-700">
                         {link.label}
                       </a>
                     )}

@@ -3,8 +3,10 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import Card from '../components/ui/Card'
+import DescriptionList from '../components/ui/DescriptionList'
 import ErrorBanner from '../components/ui/ErrorBanner'
 import Field from '../components/ui/Field'
+import Icon from '../components/ui/Icon'
 import { INPUT_CLASSES } from '../components/ui/inputStyles'
 import PageHeader from '../components/ui/PageHeader'
 import {
@@ -74,7 +76,11 @@ export default function NewRunPage() {
 
       <form onSubmit={handleSubmit} noValidate className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <Card title="What to ask" description="Prompts are chosen by category from the catalogue.">
+          <Card
+            title="What to ask"
+            description="Prompts are chosen by category from the catalogue."
+            icon={<Icon name="search" className="h-5 w-5" />}
+          >
             <div className="grid gap-5 sm:grid-cols-2">
               <Field id="category" label="Category" error={errors.category} hint="The demo data has “earbuds”.">
                 <input
@@ -103,7 +109,11 @@ export default function NewRunPage() {
             </div>
           </Card>
 
-          <Card title="Who to ask" description="One or two assistants. Each is asked every prompt.">
+          <Card
+            title="Who to ask"
+            description="One or two assistants. Each is asked every prompt."
+            icon={<Icon name="users" className="h-5 w-5" />}
+          >
             <fieldset>
               <legend className="sr-only">Assistants</legend>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -112,8 +122,10 @@ export default function NewRunPage() {
                   return (
                     <label
                       key={provider.value}
-                      className={`flex cursor-pointer items-center gap-3 rounded-lg border p-4 ${
-                        checked ? 'border-indigo-300 bg-indigo-50/60' : 'border-slate-200 hover:bg-slate-50'
+                      className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-all duration-150 focus-within:ring-4 focus-within:ring-indigo-500/15 ${
+                        checked
+                          ? 'border-indigo-400 bg-indigo-50/60 shadow-sm'
+                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                       }`}
                     >
                       <input
@@ -122,18 +134,29 @@ export default function NewRunPage() {
                         checked={checked}
                         onChange={() => toggleProvider(provider.value)}
                       />
-                      <span className="text-sm font-medium text-slate-800">{provider.label}</span>
+                      <span className="flex-1 text-sm font-medium text-slate-800">{provider.label}</span>
+                      <Icon
+                        name="sparkles"
+                        className={`h-4 w-4 transition-colors ${checked ? 'text-indigo-500' : 'text-slate-300'}`}
+                      />
                     </label>
                   )
                 })}
               </div>
               {errors.answer_providers ? (
-                <p className="mt-2 text-sm text-rose-600">{errors.answer_providers}</p>
+                <p className="mt-2 flex items-center gap-1.5 text-sm text-rose-600">
+                  <span className="h-1 w-1 flex-none rounded-full bg-rose-500" aria-hidden />
+                  {errors.answer_providers}
+                </p>
               ) : null}
             </fieldset>
           </Card>
 
-          <Card title="How to check" description="Repeats measure how stable answers are.">
+          <Card
+            title="How to check"
+            description="Repeats measure how stable answers are."
+            icon={<Icon name="verify" className="h-5 w-5" />}
+          >
             <div className="grid gap-5 sm:grid-cols-3">
               <Field id="repeats" label="Repeats" error={errors.repeats} hint="1 to 5 per prompt.">
                 <input
@@ -182,24 +205,19 @@ export default function NewRunPage() {
           </Card>
         </div>
 
-        <div className="space-y-6">
-          <Card title="Summary">
-            <dl className="space-y-3 text-sm">
-              <div className="flex justify-between gap-4">
-                <dt className="text-slate-500">Answers per prompt</dt>
-                <dd className="font-medium text-slate-900">
-                  {values.providers.length} × {values.repeats || 0} ={' '}
-                  {values.providers.length * (values.repeats || 0)}
-                </dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-slate-500">Cost per answer</dt>
-                <dd className="text-right font-medium text-slate-900">
-                  1 call + up to 4 to verify
-                </dd>
-              </div>
-            </dl>
-            <p className="mt-4 text-xs leading-5 text-slate-500">
+        {/* On large screens the summary stays in view while the form scrolls. */}
+        <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
+          <Card title="Summary" icon={<Icon name="chart" className="h-5 w-5" />}>
+            <DescriptionList
+              items={[
+                [
+                  'Answers per prompt',
+                  `${values.providers.length} × ${values.repeats || 0} = ${values.providers.length * (values.repeats || 0)}`,
+                ],
+                ['Cost per answer', '1 call + up to 4 to verify'],
+              ]}
+            />
+            <p className="mt-5 rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-500 ring-1 ring-slate-100">
               The run is queued and processed by a worker in the background. Submitting the
               same values twice returns the same run.
             </p>
@@ -208,7 +226,7 @@ export default function NewRunPage() {
                 <ErrorBanner error={otherServerError} title="Could not queue the run" />
               </div>
             ) : null}
-            <Button type="submit" className="mt-5 w-full" loading={create.status === 'loading'}>
+            <Button type="submit" size="lg" className="mt-5 w-full" loading={create.status === 'loading'}>
               Queue run
             </Button>
           </Card>

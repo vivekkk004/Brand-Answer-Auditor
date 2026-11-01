@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { formatPercent } from '../../utils/format'
 import EmptyState from '../ui/EmptyState'
+import SegmentedControl from '../ui/SegmentedControl'
 import Table from '../ui/Table'
 import ConfidenceBar from './ConfidenceBar'
 
@@ -25,8 +26,12 @@ export default function InclusionTable({ inclusion }) {
 
   const columns = [
     { key: 'brand_id', header: 'Brand', className: 'font-medium text-slate-900' },
-    { key: 'kn', header: 'Named in', render: (row) => `${row.k} of ${row.n}` },
-    { key: 'rate', header: 'Rate', render: (row) => formatPercent(row.rate) },
+    { key: 'kn', header: 'Named in', className: 'whitespace-nowrap', render: (row) => `${row.k} of ${row.n}` },
+    {
+      key: 'rate',
+      header: 'Rate',
+      render: (row) => <span className="font-semibold text-slate-900">{formatPercent(row.rate)}</span>,
+    },
     {
       key: 'ci',
       header: '95% interval',
@@ -45,23 +50,18 @@ export default function InclusionTable({ inclusion }) {
   return (
     <div>
       {models.length > 1 ? (
-        <div className="flex flex-wrap gap-2 px-5 pt-4" role="tablist" aria-label="Model">
-          {[ALL, ...models].map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="tab"
-              aria-selected={view === option}
-              onClick={() => setView(option)}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                view === option
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              {option === ALL ? 'All models' : option}
-            </button>
-          ))}
+        <div className="border-b border-slate-100 px-5 py-3 sm:px-6">
+          <SegmentedControl
+            label="Model"
+            size="sm"
+            className="sm:inline-flex"
+            options={[ALL, ...models].map((option) => ({
+              value: option,
+              label: option === ALL ? 'All models' : option,
+            }))}
+            value={view}
+            onChange={setView}
+          />
         </div>
       ) : null}
       <Table columns={columns} rows={visible} rowKey={(row) => `${row.brand_id}-${row.model}`} />

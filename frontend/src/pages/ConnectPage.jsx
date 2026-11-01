@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Navigate, useLocation } from 'react-router-dom'
+import Alert from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
 import ErrorBanner from '../components/ui/ErrorBanner'
 import Field from '../components/ui/Field'
@@ -34,7 +35,7 @@ export default function ConnectPage() {
   }
 
   return (
-    <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-20">
+    <div className="animate-page-in mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 sm:py-16 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-20">
       {/* Brand panel */}
       <div className="relative isolate hidden overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-600 p-10 text-white shadow-float lg:flex lg:flex-col">
         <div className="bg-grid absolute inset-0 -z-10 opacity-20 invert" />
@@ -72,11 +73,11 @@ export default function ConnectPage() {
 
       {/* Form */}
       <div className="flex flex-col justify-center">
-        <div className="mx-auto w-full max-w-md">
+        <div className="surface mx-auto w-full max-w-md p-6 sm:p-8 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-sm">
             <Icon name="key" className="h-6 w-6" />
           </div>
-          <h1 className="mt-6 text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="mt-6 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
             Connect your API key
           </h1>
           <p className="mt-2 text-[15px] text-slate-500">
@@ -84,9 +85,8 @@ export default function ConnectPage() {
           </p>
 
           {sessionExpired ? (
-            <div className="mt-6 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-              <Icon name="alert" className="h-5 w-5 flex-none" />
-              Your key was refused by the API. Please connect again.
+            <div className="mt-6">
+              <Alert tone="warning">Your key was refused by the API. Please connect again.</Alert>
             </div>
           ) : null}
 
@@ -119,7 +119,7 @@ export default function ConnectPage() {
                 <button
                   type="button"
                   onClick={() => setShowKey((value) => !value)}
-                  className="absolute inset-y-0 right-2 my-auto h-7 rounded-md px-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                  className="absolute inset-y-0 right-2 my-auto h-7 rounded-md px-2 text-xs font-semibold text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800"
                   aria-label={showKey ? 'Hide key' : 'Show key'}
                 >
                   {showKey ? 'Hide' : 'Show'}

@@ -7,9 +7,11 @@ import Card from '../components/ui/Card'
 import EmptyState from '../components/ui/EmptyState'
 import ErrorBanner from '../components/ui/ErrorBanner'
 import { INPUT_CLASSES } from '../components/ui/inputStyles'
+import Icon from '../components/ui/Icon'
+import LoadingState from '../components/ui/LoadingState'
 import PageHeader from '../components/ui/PageHeader'
 import Pagination from '../components/ui/Pagination'
-import Spinner from '../components/ui/Spinner'
+import SegmentedControl from '../components/ui/SegmentedControl'
 import {
   clearDecideError,
   decideReviewItem,
@@ -32,7 +34,7 @@ function ReviewItemCard({ item, pending, decideError, onDecide }) {
   const { claim } = item
 
   return (
-    <li className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <li className="surface animate-page-in p-5 transition-shadow duration-200 hover:shadow-md sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <ReviewStatusBadge status={item.status} />
@@ -44,7 +46,9 @@ function ReviewItemCard({ item, pending, decideError, onDecide }) {
         <span className="text-xs text-slate-400">Found {formatDateTime(item.created_at)}</span>
       </div>
 
-      <blockquote className="mt-4 border-l-4 border-rose-300 pl-4 text-slate-900">“{claim.quote}”</blockquote>
+      <blockquote className="mt-4 rounded-r-lg border-l-4 border-rose-300 bg-rose-50/40 py-2 pr-3 pl-4 text-[15px] leading-7 text-slate-900">
+        “{claim.quote}”
+      </blockquote>
       <p className="mt-3 text-sm text-slate-600">
         <span className="font-medium text-slate-700">Agent’s reason: </span>
         {claim.rationale}
@@ -56,8 +60,12 @@ function ReviewItemCard({ item, pending, decideError, onDecide }) {
             {factId}
           </code>
         ))}
-        <Link to={answerPath(item.answer_id)} className="ml-auto text-sm font-medium text-indigo-700 hover:underline">
+        <Link
+          to={answerPath(item.answer_id)}
+          className="group ml-auto inline-flex items-center gap-1 text-sm font-medium text-indigo-700 transition-colors hover:text-indigo-500"
+        >
           Open answer
+          <Icon name="arrowRight" className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
         </Link>
       </div>
 
@@ -83,7 +91,7 @@ function ReviewItemCard({ item, pending, decideError, onDecide }) {
               />
             </div>
           ) : null}
-          <div className="mt-3 flex flex-wrap justify-end gap-2">
+          <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="secondary" disabled={pending} onClick={() => onDecide('dismissed', note)}>
               Dismiss — the claim is fine
             </Button>
@@ -93,9 +101,12 @@ function ReviewItemCard({ item, pending, decideError, onDecide }) {
           </div>
         </div>
       ) : (
-        <div className="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
-          Decided {formatDateTime(item.resolved_at)}
-          {item.note ? <> — “{item.note}”</> : null}
+        <div className="mt-4 flex items-start gap-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-600 ring-1 ring-slate-100">
+          <Icon name="check" className="mt-0.5 h-4 w-4 flex-none text-slate-400" />
+          <span>
+            Decided {formatDateTime(item.resolved_at)}
+            {item.note ? <> — “{item.note}”</> : null}
+          </span>
         </div>
       )}
     </li>
@@ -129,30 +140,23 @@ export default function ReviewQueuePage() {
         description="Every contradicted claim is checked by a person before anyone acts on it. A decision is final."
       />
 
-      <div className="mb-4 flex gap-1 rounded-lg bg-slate-100 p-1 sm:inline-flex" role="tablist" aria-label="Status">
-        {REVIEW_STATUSES.map((value) => (
-          <button
-            key={value}
-            type="button"
-            role="tab"
-            aria-selected={filter === value}
-            onClick={() => {
-              dispatch(clearDecideError())
-              dispatch(setReviewFilter(value))
-            }}
-            className={`flex-1 rounded-md px-4 py-1.5 text-sm font-medium transition-colors sm:flex-none ${
-              filter === value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            {humanize(value)}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        label="Status"
+        className="mb-5 sm:inline-flex"
+        options={REVIEW_STATUSES.map((value) => ({ value, label: humanize(value) }))}
+        value={filter}
+        onChange={(value) => {
+          dispatch(clearDecideError())
+          dispatch(setReviewFilter(value))
+        }}
+      />
 
       {status === 'failed' ? (
         <ErrorBanner error={error} title="Could not load the review queue" onRetry={load} />
       ) : (status === 'idle' || status === 'loading') && !items.length ? (
-        <Spinner label="Loading review items…" />
+        <Card>
+          <LoadingState label="Loading review items…" />
+        </Card>
       ) : items.length ? (
         <>
           <ul className="space-y-4">
@@ -166,7 +170,7 @@ export default function ReviewQueuePage() {
               />
             ))}
           </ul>
-          <div className="mt-4 rounded-xl border border-slate-200 bg-white">
+          <div className="surface mt-4 overflow-hidden">
             <Pagination
               offset={offset}
               limit={limit}

@@ -53,35 +53,34 @@ export default function VerifyPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <form onSubmit={handleSubmit} className="relative space-y-5" noValidate>
-            {/* Sits on the same line as the "Answer text" label. */}
-            <div className="absolute -top-1 right-0">
-              <button
-                type="button"
-                onClick={() => setText(EXAMPLE_TEXT)}
-                className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200 transition-colors hover:bg-indigo-100"
-              >
-                <Icon name="sparkles" className="h-3.5 w-3.5" />
-                Try an example
-              </button>
-            </div>
+          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             <Field
               id="answer-text"
               label="Answer text"
               hint={`${text.length.toLocaleString()} / ${MAX_LENGTH.toLocaleString()} characters`}
+              action={
+                <button
+                  type="button"
+                  onClick={() => setText(EXAMPLE_TEXT)}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200 transition-colors hover:bg-indigo-100"
+                >
+                  <Icon name="sparkles" className="h-3.5 w-3.5" />
+                  Try an example
+                </button>
+              }
             >
               <textarea
                 id="answer-text"
                 rows={7}
                 maxLength={MAX_LENGTH}
-                className={`${INPUT_CLASSES} font-normal leading-6`}
+                className={`${INPUT_CLASSES} resize-y leading-6`}
                 placeholder="For example: The Zentro Air 2 costs ₹6,999 in India and lasts 8 hours with ANC off."
                 value={text}
                 onChange={(event) => setText(event.target.value)}
               />
             </Field>
-            <div className="flex flex-wrap items-end gap-4">
-              <div className="w-48">
+            <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
+              <div className="sm:w-48">
                 <Field id="market" label="Market">
                   <select
                     id="market"
@@ -97,7 +96,7 @@ export default function VerifyPage() {
                   </select>
                 </Field>
               </div>
-              <div className="w-64">
+              <div className="sm:w-64">
                 <Field id="prompt-version" label="Agent prompt">
                   <select
                     id="prompt-version"
@@ -115,7 +114,7 @@ export default function VerifyPage() {
               </div>
               <Button
                 type="submit"
-                className="ml-auto"
+                className="w-full sm:ml-auto sm:w-auto"
                 loading={status === 'loading'}
                 disabled={!text.trim()}
               >
@@ -127,10 +126,13 @@ export default function VerifyPage() {
         </Card>
 
         <Card title="How verification works" icon={<Icon name="tool" className="h-5 w-5" />}>
-          <ol className="space-y-5">
+          <ol className="relative space-y-5">
             {HOW_IT_WORKS.map((step, index) => (
-              <li key={step.title} className="flex gap-3">
-                <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">
+              <li key={step.title} className="relative flex gap-3">
+                {index < HOW_IT_WORKS.length - 1 ? (
+                  <span className="absolute top-7 -bottom-4 left-[11px] w-0.5 rounded-full bg-indigo-100" aria-hidden />
+                ) : null}
+                <span className="relative flex h-6 w-6 flex-none items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white ring-4 ring-indigo-50">
                   {index + 1}
                 </span>
                 <div>
@@ -167,14 +169,18 @@ export default function VerifyPage() {
       {status === 'succeeded' && result ? (
         <div className="mt-6 grid gap-6 lg:grid-cols-5">
           <Card
-            className="lg:col-span-3"
+            className="animate-page-in lg:col-span-3"
             title="Answer"
             description={`${result.claims.length} claim(s) · ${result.verification_turns ?? '–'} agent turn(s) · ${formatMs(result.verification_latency_ms)}`}
             actions={
               <>
                 <AnswerStatusBadge status={result.status} />
-                <Link to={answerPath(result.id)} className="text-sm font-medium text-indigo-700 hover:underline">
+                <Link
+                  to={answerPath(result.id)}
+                  className="group inline-flex items-center gap-1 text-sm font-medium text-indigo-700 transition-colors hover:text-indigo-500"
+                >
                   Full details
+                  <Icon name="arrowRight" className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                 </Link>
               </>
             }
@@ -186,7 +192,7 @@ export default function VerifyPage() {
               onSelectClaim={setActiveClaimId}
             />
           </Card>
-          <Card className="lg:col-span-2" title="Claims">
+          <Card className="animate-page-in lg:col-span-2" title="Claims">
             <ClaimList claims={result.claims} activeClaimId={activeClaimId} onSelectClaim={setActiveClaimId} />
           </Card>
         </div>

@@ -7,7 +7,7 @@ import Card from '../components/ui/Card'
 import EmptyState from '../components/ui/EmptyState'
 import ErrorBanner from '../components/ui/ErrorBanner'
 import Icon from '../components/ui/Icon'
-import Spinner from '../components/ui/Spinner'
+import LoadingState from '../components/ui/LoadingState'
 import StatCard from '../components/ui/StatCard'
 import Table from '../components/ui/Table'
 import { fetchOpenReviewCount, OPEN_COUNT_LIMIT } from '../features/review/reviewSlice'
@@ -46,7 +46,11 @@ export default function DashboardPage() {
       key: 'id',
       header: 'Run',
       render: (run) => (
-        <Link to={runPath(run.id)} className="font-mono text-xs font-medium text-indigo-700 hover:underline">
+        <Link
+          to={runPath(run.id)}
+          className="font-mono text-xs font-medium text-indigo-700 hover:underline"
+          onClick={(event) => event.stopPropagation()}
+        >
           {shortId(run.id)}
         </Link>
       ),
@@ -64,7 +68,7 @@ export default function DashboardPage() {
   return (
     <>
       {/* Welcome banner */}
-      <section className="relative isolate mb-8 overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-600 px-6 py-8 text-white shadow-float sm:px-10">
+      <section className="relative isolate mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-600 px-5 py-7 text-white shadow-float sm:mb-8 sm:px-10 sm:py-9">
         <div className="bg-grid absolute inset-0 -z-10 opacity-20 invert" />
         <div className="animate-aurora absolute -top-20 -right-16 -z-10 h-64 w-64 rounded-full bg-violet-400/40 blur-3xl" />
         <div className="flex flex-wrap items-end justify-between gap-6">
@@ -77,12 +81,12 @@ export default function DashboardPage() {
               Queue runs, follow their progress and clear the review queue.
             </p>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <ButtonLink to={PATHS.newRun} variant="white">
+          <div className="flex w-full flex-wrap gap-3 sm:w-auto">
+            <ButtonLink to={PATHS.newRun} variant="white" className="flex-1 sm:flex-none">
               <Icon name="plus" className="h-4 w-4" />
               New audit run
             </ButtonLink>
-            <ButtonLink to={PATHS.verify} variant="glass">
+            <ButtonLink to={PATHS.verify} variant="glass" className="flex-1 sm:flex-none">
               <Icon name="verify" className="h-4 w-4" />
               Verify an answer
             </ButtonLink>
@@ -90,7 +94,7 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
           label="API status"
           value={health === 'ok' ? 'Healthy' : health === 'down' ? 'Unavailable' : 'Checking…'}
@@ -121,15 +125,17 @@ export default function DashboardPage() {
           description="The five newest audit runs."
           bodyClassName=""
           actions={
-            <Link to={PATHS.runs} className="text-sm font-medium text-indigo-700 hover:underline">
+            <Link
+              to={PATHS.runs}
+              className="group inline-flex items-center gap-1 text-sm font-medium text-indigo-700 transition-colors hover:text-indigo-500"
+            >
               View all
+              <Icon name="arrowRight" className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
             </Link>
           }
         >
           {(recent.status === 'idle' || recent.status === 'loading') && !recent.items.length ? (
-            <div className="p-6">
-              <Spinner label="Loading runs…" />
-            </div>
+            <LoadingState label="Loading runs…" />
           ) : recent.status === 'failed' ? (
             <div className="p-5">
               <ErrorBanner error={recent.error} onRetry={() => dispatch(fetchRecentRuns())} />
@@ -151,22 +157,26 @@ export default function DashboardPage() {
         </Card>
 
         <Card title="Quick actions">
-          <ul className="space-y-2">
+          <ul className="-mx-2 space-y-1">
             {QUICK_ACTIONS.map((action) => (
               <li key={action.to}>
                 <Link
                   to={action.to}
-                  className="group flex gap-3 rounded-lg p-3 transition-colors hover:bg-slate-50"
+                  className="group flex items-center gap-3 rounded-xl p-3 transition-colors duration-150 hover:bg-slate-50"
                 >
-                  <div className="flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                  <div className="flex h-10 w-10 flex-none items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100 transition-colors group-hover:bg-indigo-600 group-hover:text-white group-hover:ring-indigo-600">
                     <Icon name={action.icon} className="h-5 w-5" />
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900 group-hover:text-indigo-700">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-slate-900 transition-colors group-hover:text-indigo-700">
                       {action.title}
                     </p>
-                    <p className="text-xs text-slate-500">{action.text}</p>
+                    <p className="mt-0.5 text-xs leading-5 text-slate-500">{action.text}</p>
                   </div>
+                  <Icon
+                    name="arrowRight"
+                    className="h-4 w-4 flex-none text-slate-300 transition-all group-hover:translate-x-0.5 group-hover:text-indigo-500"
+                  />
                 </Link>
               </li>
             ))}

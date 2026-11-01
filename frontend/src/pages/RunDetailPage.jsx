@@ -5,10 +5,12 @@ import InclusionTable from '../components/domain/InclusionTable'
 import LabelShareBar from '../components/domain/LabelShareBar'
 import RunConfigSummary from '../components/domain/RunConfigSummary'
 import { RunStatusBadge } from '../components/domain/StatusBadges'
+import Alert from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import ErrorBanner from '../components/ui/ErrorBanner'
 import Icon from '../components/ui/Icon'
+import LoadingState from '../components/ui/LoadingState'
 import PageHeader from '../components/ui/PageHeader'
 import Spinner from '../components/ui/Spinner'
 import StatCard from '../components/ui/StatCard'
@@ -25,25 +27,46 @@ function Timeline({ run }) {
     { label: 'Started', at: run.started_at, done: Boolean(run.started_at) },
     { label: humanize(run.finished_at ? run.status : 'finished'), at: run.finished_at, done: Boolean(run.finished_at) },
   ]
+  const active = ACTIVE_RUN_STATUSES.includes(run.status)
   return (
-    <ol className="space-y-4">
-      {steps.map((step) => (
-        <li key={step.label} className="flex items-start gap-3">
-          <span
-            className={`mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full ${
-              step.done ? 'bg-indigo-600 text-white' : 'border-2 border-slate-200 bg-white'
-            }`}
-          >
-            {step.done ? <Icon name="check" className="h-3 w-3" /> : null}
-          </span>
-          <div>
-            <p className={`text-sm font-medium ${step.done ? 'text-slate-900' : 'text-slate-400'}`}>
-              {step.label}
-            </p>
-            <p className="text-xs text-slate-500">{step.done ? formatDateTime(step.at) : 'Waiting'}</p>
-          </div>
-        </li>
-      ))}
+    <ol>
+      {steps.map((step, index) => {
+        // The first unfinished step of an active run is the one happening now.
+        const current = active && !step.done && steps[index - 1]?.done
+        const next = steps[index + 1]
+        return (
+          <li key={step.label} className="relative flex items-start gap-3 pb-5 last:pb-0">
+            {next ? (
+              <span
+                className={`absolute top-6 bottom-0 left-[9px] w-0.5 rounded-full ${
+                  next.done ? 'bg-indigo-600' : 'bg-slate-200'
+                }`}
+                aria-hidden
+              />
+            ) : null}
+            <span
+              className={`relative mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full transition-colors ${
+                step.done
+                  ? 'bg-indigo-600 text-white'
+                  : current
+                    ? 'border-2 border-indigo-400 bg-white'
+                    : 'border-2 border-slate-200 bg-white'
+              }`}
+            >
+              {step.done ? <Icon name="check" className="h-3 w-3" /> : null}
+              {current ? <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" /> : null}
+            </span>
+            <div>
+              <p className={`text-sm font-medium ${step.done ? 'text-slate-900' : 'text-slate-400'}`}>
+                {step.label}
+              </p>
+              <p className="text-xs text-slate-500">
+                {step.done ? formatDateTime(step.at) : current ? 'In progress' : 'Waiting'}
+              </p>
+            </div>
+          </li>
+        )
+      })}
     </ol>
   )
 }
@@ -51,26 +74,31 @@ function Timeline({ run }) {
 function TokensTable({ tokens }) {
   const rows = ['generation', 'verification', 'total']
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="text-left text-xs text-slate-500 uppercase">
-          <th className="pb-2 font-medium">Phase</th>
-          <th className="pb-2 text-right font-medium">Input</th>
-          <th className="pb-2 text-right font-medium">Output</th>
-          <th className="pb-2 text-right font-medium">Thinking</th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-slate-100">
-        {rows.map((phase) => (
-          <tr key={phase} className={phase === 'total' ? 'font-semibold' : ''}>
-            <td className="py-2 text-slate-700">{humanize(phase)}</td>
-            <td className="py-2 text-right">{formatNumber(tokens?.[phase]?.input)}</td>
-            <td className="py-2 text-right">{formatNumber(tokens?.[phase]?.output)}</td>
-            <td className="py-2 text-right">{formatNumber(tokens?.[phase]?.thinking)}</td>
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm tabular-nums">
+        <thead>
+          <tr className="border-b border-slate-200 text-left text-[11px] tracking-wider text-slate-500 uppercase">
+            <th className="pb-2.5 font-semibold">Phase</th>
+            <th className="pb-2.5 pl-4 text-right font-semibold">Input</th>
+            <th className="pb-2.5 pl-4 text-right font-semibold">Output</th>
+            <th className="pb-2.5 pl-4 text-right font-semibold">Thinking</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {rows.map((phase) => (
+            <tr
+              key={phase}
+              className={phase === 'total' ? 'border-t border-slate-200 font-semibold text-slate-900' : 'text-slate-700'}
+            >
+              <td className="py-2.5">{humanize(phase)}</td>
+              <td className="py-2.5 pl-4 text-right">{formatNumber(tokens?.[phase]?.input)}</td>
+              <td className="py-2.5 pl-4 text-right">{formatNumber(tokens?.[phase]?.output)}</td>
+              <td className="py-2.5 pl-4 text-right">{formatNumber(tokens?.[phase]?.thinking)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }
 
@@ -95,6 +123,7 @@ function Metrics({ metrics }) {
       <Card
         title="Brand inclusion"
         description="How often each brand was named, with a 95% Wilson confidence interval."
+        icon={<Icon name="chart" className="h-5 w-5" />}
         bodyClassName=""
       >
         <InclusionTable inclusion={metrics.inclusion} />
@@ -108,19 +137,28 @@ function Metrics({ metrics }) {
           {errors.length ? (
             <ul className="divide-y divide-slate-100">
               {errors.map(([type, count]) => (
-                <li key={type} className="flex justify-between py-2 text-sm">
+                <li key={type} className="flex items-center justify-between py-2.5 text-sm first:pt-0 last:pb-0">
                   <span className="font-medium text-slate-700">{humanize(type)}</span>
-                  <span className="text-slate-900">{formatNumber(count)}</span>
+                  <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-700 tabular-nums ring-1 ring-rose-200 ring-inset">
+                    {formatNumber(count)}
+                  </span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-slate-500">No failures.</p>
+            <p className="flex items-center gap-2 text-sm text-slate-500">
+              <Icon name="check" className="h-4 w-4 text-emerald-500" />
+              No failures.
+            </p>
           )}
         </Card>
       </div>
 
-      <Card title="Tokens" description="As reported by the providers, never estimated.">
+      <Card
+        title="Tokens"
+        description="As reported by the providers, never estimated."
+        icon={<Icon name="code" className="h-5 w-5" />}
+      >
         <TokensTable tokens={metrics.tokens} />
       </Card>
     </div>
@@ -154,7 +192,7 @@ export default function RunDetailPage() {
         {status === 'failed' ? (
           <ErrorBanner error={error} title="Could not load this run" onRetry={() => dispatch(fetchRun(runId))} />
         ) : (
-          <Spinner label="Loading run…" />
+          <LoadingState label="Loading run…" />
         )}
       </>
     )
@@ -165,7 +203,7 @@ export default function RunDetailPage() {
       <PageHeader
         title={
           <span className="flex flex-wrap items-center gap-3">
-            Run <span className="font-mono text-xl text-slate-500">{shortId(run.id)}</span>
+            Run <span className="font-mono text-lg text-slate-500 sm:text-xl">{shortId(run.id)}</span>
             <RunStatusBadge status={run.status} />
           </span>
         }
@@ -180,8 +218,10 @@ export default function RunDetailPage() {
       />
 
       {location.state?.replayed ? (
-        <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
-          This request was already made, so the existing run is shown — no second run was started.
+        <div className="mb-6">
+          <Alert tone="info">
+            This request was already made, so the existing run is shown — no second run was started.
+          </Alert>
         </div>
       ) : null}
 
@@ -192,10 +232,10 @@ export default function RunDetailPage() {
       ) : null}
 
       <div className="mb-6 grid gap-6 lg:grid-cols-3">
-        <Card title="Configuration" className="lg:col-span-2">
+        <Card title="Configuration" className="lg:col-span-2" icon={<Icon name="tool" className="h-5 w-5" />}>
           <RunConfigSummary config={run.config} modelCalls={run.model_calls} maxModelCalls={run.max_model_calls} />
         </Card>
-        <Card title="Progress">
+        <Card title="Progress" icon={<Icon name="runs" className="h-5 w-5" />}>
           <Timeline run={run} />
         </Card>
       </div>
@@ -205,12 +245,14 @@ export default function RunDetailPage() {
       ) : (
         <Card>
           <div className="flex items-start gap-4">
-            <Spinner />
-            <div className="text-sm text-slate-600">
+            <div className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-indigo-50 ring-1 ring-indigo-100">
+              <Spinner className="h-5 w-5 text-indigo-600" />
+            </div>
+            <div className="text-sm leading-6 text-slate-600">
               <p className="font-medium text-slate-900">Metrics appear when the run finishes.</p>
               <p className="mt-1">
                 This page refreshes every {POLL_MS / 1000} seconds while the run is queued or
-                running. Runs are processed by a separate worker (<code className="rounded bg-slate-100 px-1">auditor worker</code>);
+                running. Runs are processed by a separate worker (<code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-700">auditor worker</code>);
                 if it stays queued, check that a worker is running and configured.
               </p>
             </div>

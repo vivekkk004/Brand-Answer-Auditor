@@ -10,7 +10,7 @@ import Icon from '../components/ui/Icon'
 import { INPUT_CLASSES } from '../components/ui/inputStyles'
 import PageHeader from '../components/ui/PageHeader'
 import Pagination from '../components/ui/Pagination'
-import Spinner from '../components/ui/Spinner'
+import LoadingState from '../components/ui/LoadingState'
 import Table from '../components/ui/Table'
 import { fetchRuns, setRunsFilter, setRunsOffset } from '../features/runs/runsSlice'
 import { PATHS, runPath } from '../routes/paths'
@@ -49,10 +49,11 @@ export default function RunsPage() {
       header: 'Assistants',
       render: (run) => run.config.answer_providers?.map(humanize).join(', '),
     },
-    { key: 'repeats', header: 'Repeats', render: (run) => run.config.repeats },
+    { key: 'repeats', header: 'Repeats', className: 'text-right', render: (run) => run.config.repeats },
     {
       key: 'calls',
       header: 'Model calls',
+      className: 'whitespace-nowrap text-right',
       render: (run) => `${formatNumber(run.model_calls)} / ${formatNumber(run.max_model_calls)}`,
     },
     {
@@ -79,6 +80,7 @@ export default function RunsPage() {
       <Card
         bodyClassName=""
         title="Runs"
+        description="Click a row to open the run."
         actions={
           <>
             <label htmlFor="status-filter" className="sr-only">
@@ -88,7 +90,7 @@ export default function RunsPage() {
               id="status-filter"
               value={filter}
               onChange={(event) => dispatch(setRunsFilter(event.target.value))}
-              className={`${INPUT_CLASSES} w-40`}
+              className={`${INPUT_CLASSES} w-44`}
             >
               <option value="">All statuses</option>
               {RUN_STATUSES.map((value) => (
@@ -104,13 +106,11 @@ export default function RunsPage() {
         }
       >
         {status === 'failed' ? (
-          <div className="p-5">
+          <div className="p-5 sm:p-6">
             <ErrorBanner error={error} title="Could not load runs" onRetry={load} />
           </div>
         ) : (status === 'idle' || status === 'loading') && !items.length ? (
-          <div className="p-6">
-            <Spinner label="Loading runs…" />
-          </div>
+          <LoadingState label="Loading runs…" />
         ) : (
           <>
             <Table

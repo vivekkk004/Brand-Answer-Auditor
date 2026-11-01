@@ -11,11 +11,11 @@ export default function RunConfigSummary({ config, modelCalls, maxModelCalls }) 
     ['Model calls', `${formatNumber(modelCalls)} of ${formatNumber(maxModelCalls)}`],
   ]
   return (
-    <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
+    <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       {items.map(([label, value]) => (
-        <div key={label}>
-          <dt className="text-xs font-medium tracking-wide text-slate-500 uppercase">{label}</dt>
-          <dd className="mt-1 text-sm font-medium text-slate-900">{value ?? '–'}</dd>
+        <div key={label} className="min-w-0 rounded-xl bg-slate-50/80 p-3 ring-1 ring-slate-100">
+          <dt className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase">{label}</dt>
+          <dd className="mt-1 text-sm font-medium break-words text-slate-900 tabular-nums">{value ?? '–'}</dd>
         </div>
       ))}
     </dl>

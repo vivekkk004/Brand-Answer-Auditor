@@ -73,7 +73,7 @@ function SidebarContent({ onNavigate }) {
               end={item.end}
               onClick={onNavigate}
               className={({ isActive }) =>
-                `group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                `group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 ${
                   isActive
                     ? 'bg-indigo-50 text-indigo-700'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -87,7 +87,7 @@ function SidebarContent({ onNavigate }) {
                   ) : null}
                   <Icon
                     name={item.icon}
-                    className={`h-5 w-5 ${isActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'}`}
+                    className={`h-5 w-5 transition-colors ${isActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'}`}
                   />
                   {item.label}
                 </>
@@ -134,6 +134,16 @@ export default function AppLayout() {
     dispatch(fetchHealth())
   }, [dispatch])
 
+  // Escape closes the mobile menu, as people expect from any overlay.
+  useEffect(() => {
+    if (!menuOpen) return undefined
+    const onKey = (event) => {
+      if (event.key === 'Escape') setMenuOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [menuOpen])
+
   // Close the mobile menu after navigating. Done while rendering (not in an effect), the
   // way React recommends for resetting state when a value changes.
   const [lastPath, setLastPath] = useState(location.pathname)
@@ -156,15 +166,15 @@ export default function AppLayout() {
         <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true">
           <button
             type="button"
-            className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm"
+            className="animate-backdrop-in absolute inset-0 bg-slate-900/30 backdrop-blur-sm"
             aria-label="Close menu"
             onClick={() => setMenuOpen(false)}
           />
-          <aside className="relative h-full w-72 max-w-[85%] bg-white shadow-xl">
+          <aside className="animate-drawer-in relative h-full w-72 max-w-[85%] bg-white shadow-xl">
             <button
               type="button"
               onClick={() => setMenuOpen(false)}
-              className="absolute top-4 right-3 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+              className="absolute top-4 right-3 rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
               aria-label="Close menu"
             >
               <Icon name="close" />
@@ -181,7 +191,7 @@ export default function AppLayout() {
             <button
               type="button"
               onClick={() => setMenuOpen(true)}
-              className="-ml-1 rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden"
+              className="-ml-1 rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden"
               aria-label="Open menu"
             >
               <Icon name="menu" />
@@ -196,7 +206,7 @@ export default function AppLayout() {
                   <li key={`${crumb.label}-${index}`} className="flex min-w-0 items-center gap-2">
                     <span className="text-slate-300">/</span>
                     {crumb.to && index < crumbs.length - 1 ? (
-                      <Link to={crumb.to} className="truncate text-slate-500 hover:text-indigo-700">
+                      <Link to={crumb.to} className="truncate text-slate-500 transition-colors hover:text-indigo-700">
                         {crumb.label}
                       </Link>
                     ) : (
@@ -221,8 +231,11 @@ export default function AppLayout() {
           </div>
         </header>
 
-        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <Outlet />
+        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+          {/* Keyed by URL so each page fades in when you navigate to it. */}
+          <div key={location.pathname} className="animate-page-in">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
