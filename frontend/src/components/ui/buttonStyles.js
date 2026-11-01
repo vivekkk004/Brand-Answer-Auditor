@@ -1,20 +1,26 @@
 /** Shared button classes, so a <button> and a router <Link> can look the same. */
 const BASE =
-  'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors ' +
-  'disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap'
+  'inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-all ' +
+  'disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap active:translate-y-px'
 
 const VARIANTS = {
-  primary: 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-700',
-  secondary: 'border border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50',
+  primary:
+    'bg-indigo-600 text-white shadow-sm shadow-indigo-600/20 ring-1 ring-inset ring-white/10 ' +
+    'hover:bg-indigo-500 hover:shadow-md hover:shadow-indigo-600/25',
+  secondary:
+    'bg-white text-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 hover:text-slate-900',
   ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
-  danger: 'bg-rose-600 text-white shadow-sm hover:bg-rose-700',
-  success: 'bg-emerald-600 text-white shadow-sm hover:bg-emerald-700',
+  danger: 'bg-rose-600 text-white shadow-sm hover:bg-rose-500',
+  success: 'bg-emerald-600 text-white shadow-sm hover:bg-emerald-500',
+  // For use on coloured (indigo/violet) backgrounds.
+  white: 'bg-white text-indigo-700 shadow-sm hover:bg-indigo-50',
+  glass: 'bg-white/10 text-white ring-1 ring-inset ring-white/25 hover:bg-white/20',
 }
 
 const SIZES = {
   sm: 'px-3 py-1.5 text-sm',
   md: 'px-4 py-2 text-sm',
-  lg: 'px-5 py-2.5 text-base',
+  lg: 'px-5 py-3 text-[15px]',
 }
 
 export function buttonClasses(variant = 'primary', size = 'md', extra = '') {

@@ -1,10 +1,124 @@
 @import "tailwindcss";
 
 /* One light theme only. Colours come from Tailwind's palette: slate for text and surfaces,
-   indigo as the single brand colour, and fixed meanings for status colours
-   (emerald = good, amber = attention, rose = problem). */
+   indigo (with a touch of violet in gradients) as the brand colour, and fixed meanings for
+   status colours (emerald = good, amber = attention, rose = problem). */
 @theme {
   --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 1px 3px rgb(15 23 42 / 0.06);
+  --shadow-float: 0 20px 45px -12px rgb(30 27 75 / 0.18), 0 8px 16px -8px rgb(15 23 42 / 0.12);
+
+  /* Animations, used as animate-fade-up, animate-float, ... (mostly in the landing hero). */
+  --animate-fade-up: fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-fade-in: fade-in 1s ease-out both;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-float-slow: float 8s ease-in-out infinite;
+  --animate-aurora: aurora 16s ease-in-out infinite alternate;
+  --animate-shimmer: shimmer 5s linear infinite;
+  --animate-scan: scan 3.6s ease-in-out infinite;
+  --animate-pop: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-12px);
+    }
+  }
+  @keyframes aurora {
+    0% {
+      transform: translate(0, 0) scale(1);
+    }
+    50% {
+      transform: translate(6%, -4%) scale(1.08);
+    }
+    100% {
+      transform: translate(-6%, 4%) scale(0.95);
+    }
+  }
+  @keyframes shimmer {
+    to {
+      background-position: 200% center;
+    }
+  }
+  @keyframes scan {
+    0% {
+      transform: translateX(-120%);
+      opacity: 0;
+    }
+    15%,
+    85% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(420%);
+      opacity: 0;
+    }
+  }
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+}
+
+/* Indigo, violet and sky moving across the text (pair with animate-shimmer). */
+@utility text-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-indigo-600),
+    var(--color-violet-600),
+    var(--color-sky-500),
+    var(--color-indigo-600)
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  color: transparent;
+}
+
+/* A faint square grid, used behind hero sections. */
+@utility bg-grid {
+  background-image:
+    linear-gradient(to right, rgb(148 163 184 / 0.14) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(148 163 184 / 0.14) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+/* Fade an element out towards its edges (used with bg-grid). */
+@utility fade-edges {
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 40%, transparent 100%);
+}
+
+/* Indigo-to-violet text, for one or two highlighted words in a headline. */
+@utility text-gradient {
+  background-image: linear-gradient(90deg, var(--color-indigo-600), var(--color-violet-600));
+  background-clip: text;
+  color: transparent;
 }
 
 :root {
@@ -17,6 +131,21 @@ html {
 
 body {
   @apply bg-slate-50 text-slate-900 antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+
+/* People who ask their system for less motion get none: animations jump to their end state. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 /* Visible keyboard focus everywhere, without changing mouse clicks. */

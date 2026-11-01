@@ -7,29 +7,29 @@ export default function Table({ columns, rows, rowKey = (row) => row.id, onRowCl
   if (!rows.length && empty) return empty
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-slate-200 text-sm">
-        <thead className="bg-slate-50">
-          <tr>
+      <table className="min-w-full text-sm">
+        <thead>
+          <tr className="border-b border-slate-200 bg-slate-50/70">
             {columns.map((column) => (
               <th
                 key={column.key}
                 scope="col"
-                className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 ${column.className || ''}`}
+                className={`px-6 py-3 text-left text-[11px] font-semibold tracking-wider text-slate-500 uppercase ${column.className || ''}`}
               >
                 {column.header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 bg-white">
+        <tbody className="divide-y divide-slate-100">
           {rows.map((row) => (
             <tr
               key={rowKey(row)}
-              className={onRowClick ? 'cursor-pointer hover:bg-slate-50' : ''}
+              className={`transition-colors ${onRowClick ? 'cursor-pointer hover:bg-indigo-50/40' : ''}`}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
             >
               {columns.map((column) => (
-                <td key={column.key} className={`px-4 py-3 text-slate-700 ${column.className || ''}`}>
+                <td key={column.key} className={`px-6 py-3.5 text-slate-700 ${column.className || ''}`}>
                   {column.render ? column.render(row) : row[column.key]}
                 </td>
               ))}

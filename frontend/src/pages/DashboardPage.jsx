@@ -7,7 +7,6 @@ import Card from '../components/ui/Card'
 import EmptyState from '../components/ui/EmptyState'
 import ErrorBanner from '../components/ui/ErrorBanner'
 import Icon from '../components/ui/Icon'
-import PageHeader from '../components/ui/PageHeader'
 import Spinner from '../components/ui/Spinner'
 import StatCard from '../components/ui/StatCard'
 import Table from '../components/ui/Table'
@@ -64,16 +63,32 @@ export default function DashboardPage() {
 
   return (
     <>
-      <PageHeader
-        title="Overview"
-        description="Your audit runs and review work at a glance."
-        actions={
-          <ButtonLink to={PATHS.newRun}>
-            <Icon name="plus" className="h-4 w-4" />
-            New audit run
-          </ButtonLink>
-        }
-      />
+      {/* Welcome banner */}
+      <section className="relative isolate mb-8 overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-600 px-6 py-8 text-white shadow-float sm:px-10">
+        <div className="bg-grid absolute inset-0 -z-10 opacity-20 invert" />
+        <div className="animate-aurora absolute -top-20 -right-16 -z-10 h-64 w-64 rounded-full bg-violet-400/40 blur-3xl" />
+        <div className="flex flex-wrap items-end justify-between gap-6">
+          <div className="max-w-xl">
+            <p className="text-sm font-medium text-indigo-100">Overview</p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
+              Your AI answer audits at a glance
+            </h1>
+            <p className="mt-2 text-indigo-100">
+              Queue runs, follow their progress and clear the review queue.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <ButtonLink to={PATHS.newRun} variant="white">
+              <Icon name="plus" className="h-4 w-4" />
+              New audit run
+            </ButtonLink>
+            <ButtonLink to={PATHS.verify} variant="glass">
+              <Icon name="verify" className="h-4 w-4" />
+              Verify an answer
+            </ButtonLink>
+          </div>
+        </div>
+      </section>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
