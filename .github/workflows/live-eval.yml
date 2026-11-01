@@ -41,6 +41,7 @@ jobs:
       OUTPUT_TOKEN_PRICE_PER_MILLION: ${{ vars.OUTPUT_TOKEN_PRICE_PER_MILLION }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
       # Inputs go through environment variables, never pasted into the script, so an
       # input value cannot inject shell commands.
       SPLIT: ${{ inputs.split }}

@@ -1,4 +1,8 @@
-"""OpenAI Chat Completions client (openai SDK 3.x)."""
+"""OpenAI Chat Completions client (openai SDK 3.x).
+
+Also used for OpenAI-compatible APIs (Groq): `base_url` points the SDK elsewhere and
+`provider_label` names that provider in error messages. The defaults are plain OpenAI.
+"""
 
 import json
 from collections.abc import Sequence
@@ -33,12 +37,18 @@ class OpenAIClient:
         timeout_seconds: float,
         temperature: float | None,
         sdk_client: Any = None,
+        base_url: str | None = None,
+        provider_label: str = "OpenAI",
     ) -> None:
         self.model = model
         self._temperature = temperature
+        self._label = provider_label
         # max_retries=0: the SDK would otherwise retry on its own, hidden from our
         # retry policy and our latency numbers. call_with_retries is the only retry loop.
-        self._client = sdk_client or OpenAI(api_key=api_key, timeout=timeout_seconds, max_retries=0)
+        # base_url=None keeps the SDK's own default (the OpenAI API).
+        self._client = sdk_client or OpenAI(
+            api_key=api_key, base_url=base_url, timeout=timeout_seconds, max_retries=0
+        )
 
     def generate(
         self,
@@ -62,8 +72,8 @@ class OpenAIClient:
         try:
             completion = self._client.chat.completions.create(**request)
         except openai.OpenAIError as exc:
-            raise map_openai_error(exc) from exc
-        return from_openai_completion(completion)
+            raise map_openai_error(exc, self._label) from exc
+        return from_openai_completion(completion, self._label)
 
 
 def to_openai_tool(tool: ToolSpec) -> dict[str, Any]:
@@ -102,9 +112,9 @@ def to_openai_messages(system: str, messages: Sequence[Message]) -> list[dict[st
     return converted
 
 
-def from_openai_completion(completion: Any) -> ModelResponse:
+def from_openai_completion(completion: Any, label: str = "OpenAI") -> ModelResponse:
     if not completion.choices:
-        raise PermanentProviderError("OpenAI returned no choices")
+        raise PermanentProviderError(f"{label} returned no choices")
     message = completion.choices[0].message
 
     calls = []
@@ -140,15 +150,15 @@ def parse_arguments(raw: str) -> dict[str, Any]:
     return value
 
 
-def map_openai_error(exc: openai.OpenAIError) -> ProviderError:
+def map_openai_error(exc: openai.OpenAIError, label: str = "OpenAI") -> ProviderError:
     # APITimeoutError is a subclass of APIConnectionError, so it must be checked first.
     if isinstance(exc, openai.APITimeoutError):
-        return ProviderTimeoutError(f"OpenAI request timed out: {exc}")
+        return ProviderTimeoutError(f"{label} request timed out: {exc}")
     if isinstance(exc, openai.APIConnectionError):
-        return TransientProviderError(f"OpenAI connection error: {exc}")
+        return TransientProviderError(f"{label} connection error: {exc}")
     if isinstance(exc, openai.APIStatusError):
-        return error_for_status(exc.status_code, f"OpenAI {exc.status_code}: {exc.message}")
-    return PermanentProviderError(f"OpenAI error: {exc}")
+        return error_for_status(exc.status_code, f"{label} {exc.status_code}: {exc.message}")
+    return PermanentProviderError(f"{label} error: {exc}")
 
 
 def _arguments_text(call: ToolCall) -> str:

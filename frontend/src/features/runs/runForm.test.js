@@ -24,6 +24,17 @@ describe('run form', () => {
     ])
   })
 
+  it('allows one to three assistants, Groq included', () => {
+    const withProviders = (providers) => validateRunForm({ ...INITIAL_RUN_VALUES, providers })
+    expect(withProviders(['groq'])).toEqual({})
+    expect(withProviders(['gemini', 'openai', 'groq'])).toEqual({})
+    expect(withProviders(['gemini', 'openai', 'groq', 'other'])).toHaveProperty('answer_providers')
+    expect(toRunConfig({ ...INITIAL_RUN_VALUES, providers: ['gemini', 'groq'] }).answer_providers).toEqual([
+      'gemini',
+      'groq',
+    ])
+  })
+
   it('builds the request body with prompt IDs as a list, or null for all', () => {
     expect(toRunConfig({ ...INITIAL_RUN_VALUES, promptIds: ' p01, ,p02 ' }).prompt_ids).toEqual([
       'p01',

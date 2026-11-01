@@ -7,9 +7,10 @@ export const REVIEW_STATUSES = ['open', 'confirmed', 'dismissed']
 export const PROVIDERS = [
   { value: 'gemini', label: 'Google Gemini' },
   { value: 'openai', label: 'OpenAI' },
+  { value: 'groq', label: 'Groq' },
 ]
 // Short names for chips and lists.
-export const PROVIDER_SHORT = { gemini: 'Gemini', openai: 'OpenAI' }
+export const PROVIDER_SHORT = { gemini: 'Gemini', openai: 'OpenAI', groq: 'Groq' }
 export const MARKETS = [
   { value: '', label: 'Not given' },
   { value: 'IN', label: 'India (IN)' },

@@ -16,7 +16,7 @@ from auditor.audit.pipeline import (
 from auditor.config import Settings
 from auditor.db.models import utc_now
 from auditor.enums import Provider
-from auditor.llm.factory import build_verifier_client
+from auditor.llm.factory import build_fallback_verifier_client, build_verifier_client
 from auditor.llm.types import LLMClient
 
 logger = logging.getLogger(__name__)
@@ -33,6 +33,7 @@ class Worker:
         *,
         answer_client_for: Callable[[Provider], LLMClient] | None = None,
         verifier_client: LLMClient | None = None,
+        fallback_verifier_client: LLMClient | None = None,
         sleep: Callable[[float], None] = time.sleep,
         now: Callable[[], datetime] = utc_now,
     ) -> None:
@@ -40,6 +41,7 @@ class Worker:
         self._settings = settings
         self._answer_client_for = answer_client_for
         self._verifier_client = verifier_client
+        self._fallback_verifier_client = fallback_verifier_client
         self._sleep = sleep
         self._now = now
         self._stopping = False
@@ -49,6 +51,8 @@ class Worker:
         instead of failing every run later. Raises ProviderConfigError."""
         if self._verifier_client is None:
             self._verifier_client = build_verifier_client(self._settings)
+        if self._fallback_verifier_client is None:
+            self._fallback_verifier_client = build_fallback_verifier_client(self._settings)
 
     def run_once(self) -> uuid.UUID | None:
         """Requeue stale runs, then process the next queued run. Returns its ID, or None."""
@@ -66,6 +70,7 @@ class Worker:
             settings=self._settings,
             answer_client_for=self._answer_client_for,
             verifier_client=self._verifier_client,
+            fallback_verifier_client=self._fallback_verifier_client,
             sleep=self._sleep,
             now=self._now,
             should_stop=lambda: self._stopping,

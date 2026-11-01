@@ -35,7 +35,7 @@ const STEPS = [
   {
     icon: 'search',
     title: 'Collect answers',
-    text: 'A background worker asks every prompt on Gemini and OpenAI and finds brand mentions with deterministic code.',
+    text: 'A background worker asks every prompt on Gemini, OpenAI or Groq and finds brand mentions with deterministic code.',
   },
   {
     icon: 'verify',
@@ -264,6 +264,10 @@ export default function LandingPage() {
               <span className="inline-flex items-center gap-2 font-semibold text-slate-700">
                 <Icon name="sparkles" className="h-4 w-4 text-emerald-500" />
                 OpenAI
+              </span>
+              <span className="inline-flex items-center gap-2 font-semibold text-slate-700">
+                <Icon name="sparkles" className="h-4 w-4 text-orange-500" />
+                Groq
               </span>
             </div>
           </div>

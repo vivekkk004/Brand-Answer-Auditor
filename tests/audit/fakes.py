@@ -14,6 +14,7 @@ from auditor.llm.types import Message, ModelResponse, TokenUsage, ToolSpec
 
 GEMINI_TEXT = "The Zentro Air 2 costs ₹6,999 and the Kovalt Pulse is also good."
 OPENAI_TEXT = "I would pick the Zentro Air 2."
+GROQ_TEXT = "The Kovalt Pulse is a solid choice."
 
 WRITER_TOKENS = TokenUsage(input_tokens=10, output_tokens=40)
 VERIFIER_TOKENS = TokenUsage(input_tokens=50, output_tokens=10)
@@ -91,6 +92,7 @@ class Writers:
         self.by_provider = {
             Provider.GEMINI: FakeWriter("gemini-answer", GEMINI_TEXT, scripts.get("gemini", ())),
             Provider.OPENAI: FakeWriter("openai-answer", OPENAI_TEXT, scripts.get("openai", ())),
+            Provider.GROQ: FakeWriter("groq-answer", GROQ_TEXT, scripts.get("groq", ())),
         }
 
     def __call__(self, provider: Provider) -> FakeWriter:
@@ -108,8 +110,10 @@ def make_settings(**values: Any) -> Settings:
         "verifier_model": "fake-verifier",
         "gemini_answer_model": "gemini-answer",
         "openai_answer_model": "openai-answer",
+        "groq_answer_model": "groq-answer",
         "gemini_api_key": "test-key",
         "openai_api_key": "test-key",
+        "groq_api_key": "test-key",
     }
     defaults.update(values)
     return Settings(_env_file=None, **defaults)

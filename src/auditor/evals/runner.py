@@ -25,6 +25,7 @@ from auditor.db.models import utc_now
 from auditor.evals.dataset import Dataset
 from auditor.evals.scoring import AnswerScore, PredictedClaim, score_answer, summarise
 from auditor.llm.gemini_client import GeminiClient
+from auditor.llm.groq_client import GroqClient
 from auditor.llm.openai_client import OpenAIClient
 from auditor.llm.types import LLMClient
 from auditor.metrics import estimate_cost_usd, percentile
@@ -127,7 +128,7 @@ def run_eval(
         settings.output_token_price_per_million,
     )
     return {
-        "is_real_run": isinstance(client, GeminiClient | OpenAIClient),
+        "is_real_run": isinstance(client, GeminiClient | OpenAIClient | GroqClient),
         "created_at": now().isoformat(),
         "git": _git_info(),
         "dataset": {

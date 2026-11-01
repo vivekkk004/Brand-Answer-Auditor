@@ -19,11 +19,12 @@ The full behaviour is specified in [SPEC.md](SPEC.md); the code must match it.
 ```
 POST /v1/audit-runs ──► audit_runs table (queue) ──► worker
                                                      │ 1. collect: prompt × provider × repeat
-                                                     │    → answer model (Gemini / OpenAI)
+                                                     │    → answer model (Gemini / OpenAI / Groq)
                                                      │    → brand mentions found by code
                                                      │ 2. verify: agent with 3 tools
                                                      │    list_known_brands, get_brand_facts,
-                                                     │    submit_claims (max 4 model calls)
+                                                     │    submit_claims (max 4 model calls;
+                                                     │    optional fallback verifier)
                                                      │ 3. metrics from stored rows
                                                      ▼
                      answers, claims, review items, run metrics (PostgreSQL)
@@ -148,7 +149,7 @@ src/auditor/
   config.py, enums.py, metrics.py, cli.py
   db/          SQLAlchemy models, sessions
   catalogue/   strict CSV loader, in-memory and SQL catalogues
-  llm/         provider-neutral types, Gemini/OpenAI clients, retries, ScriptedClient
+  llm/         provider-neutral types, Gemini/OpenAI/Groq clients, retries, ScriptedClient
   agent/       tools, validator, prompts, verify_answer loop
   audit/       run config, mentions, pipeline, worker
   api/         FastAPI app, routes, services, auth
@@ -167,6 +168,10 @@ Deployment: `Dockerfile` (one image for API and worker), `docker-compose.yml`,
 - **No live results yet.** Every score so far comes from fake clients in tests.
 - **Small, synthetic eval set.** 16 fictional answers show the pipeline works; they do not
   measure real-world accuracy. Real answers labelled by two people would be the next step.
+- **Groq's OpenAI compatibility is partial.** Some Groq models handle forced tool calls
+  poorly; choose a Groq verifier model only after a live eval (`auditor eval`) with it.
+- **One price setting.** Token prices are global, so cost is only right when a run's
+  answer and verifier models share prices.
 - **API models, not consumer apps.** Results describe a model through its API; ChatGPT or
   Gemini apps add search and system prompts and may answer differently.
 - **Brand mentions are whole-word matches** of names and aliases; misspellings are missed.

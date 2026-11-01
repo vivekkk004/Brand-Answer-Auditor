@@ -103,10 +103,11 @@ npm run build               # production build into frontend/dist
 
 - `src/auditor/` — the package (`config.py`, `enums.py`, `db/`, `catalogue/`, `cli.py`)
 - `src/auditor/llm/` — provider-neutral model layer: `types.py`, `errors.py`, `retry.py`,
-  `openai_client.py`, `gemini_client.py`, `factory.py`, and `fake.py` (`ScriptedClient` for tests)
+  `openai_client.py`, `gemini_client.py`, `groq_client.py` (OpenAI client on Groq's endpoint),
+  `factory.py`, and `fake.py` (`ScriptedClient` for tests)
 - `src/auditor/agent/` — the verification agent: `schemas.py`, `tools.py` (JSON schemas +
   `ToolExecutor`), `validator.py` (quote → offsets, all issues at once), `prompts.py` (v1, v2),
-  `verifier.py` (`verify_answer` loop)
+  `verifier.py` (`verify_answer` loop), `fallback.py` (optional second verifier)
 - `src/auditor/audit/` — audit runs: `run_config.py`, `mentions.py`, `persistence.py`,
   `pipeline.py` (claim, collect, verify, metrics, budget), `worker.py`
 - `src/auditor/metrics.py` — Wilson interval, P/R/F1, percentile, cost

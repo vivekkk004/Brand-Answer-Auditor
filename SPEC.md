@@ -41,8 +41,9 @@ direction is costly and a human should confirm it before anyone acts on it.
 
 - HTTP API (FastAPI) described in section 6.
 - Audit runs against answer models through official APIs (Google Gemini via `google-genai`,
-  OpenAI via `openai`), processed by a separate worker process (6.4) that resumes
-  interrupted runs.
+  OpenAI via `openai`, Groq via its OpenAI-compatible API at
+  `https://api.groq.com/openai/v1`, also through `openai`), processed by a separate
+  worker process (6.4) that resumes interrupted runs.
 - Inclusion measurement with Wilson confidence intervals.
 - Verification agent with tool calling, strict output validation and a call limit.
 - Human review queue for contradicted claims.
@@ -306,6 +307,24 @@ conversation (for debugging).
   (401/403 or missing key/model; not retried). For Gemini, timeouts and network failures
   arrive as raw `httpx`/`httpx2` exceptions and are mapped the same way.
 - The same policy applies to the answer models in audit runs.
+- Groq uses the OpenAI client pointed at Groq's endpoint, so its requests, token counts
+  and error mapping are the OpenAI ones; only the provider name in messages differs.
+
+**Verifier fallback (optional).** `VERIFIER_FALLBACK_PROVIDER` / `VERIFIER_FALLBACK_MODEL`
+name a second verifier. If the main verifier's result fails as `provider` (retries used
+up, timeout, non-retryable provider error, empty reply), the answer is verified again
+**from the start** with the fallback. Nothing else falls back:
+
+- `config` errors are still raised and stop the run (a person must fix them).
+- `prompt` / `tool` failures are kept: the model answered, and switching would hide that.
+- **Answer models never fall back.** A run measures what each assistant says; another
+  provider's answer would be credited to the wrong assistant. A failed answer stays
+  `generation_failed`.
+- The eval harness (7.3) never falls back: it measures one verifier model.
+- A fallback that is the same provider and model as the main verifier is a `config` error.
+
+So with a fallback, one answer may use up to `2 × AGENT_MAX_TURNS` model calls; each
+attempt still has at most `AGENT_MAX_TURNS`.
 
 ### 4.9 Saving: all or nothing
 
@@ -316,6 +335,10 @@ conversation (for debugging).
 - The answer row also stores the verifier provider and model, prompt version, turns
   used, latency, `timed_out`, and token usage for both phases (`usage`:
   `{"generation": {...}, "verification": {...}}` with input/output/thinking counts).
+  These describe the attempt that produced the saved result. When the fallback verifier
+  (4.8) produced it, `usage.fallback_from` records the main verifier's failed attempt
+  (provider, model, error type and detail, `timed_out`, turns, latency, tokens), and its
+  tokens are added to `usage.verification` so token and cost totals count every call.
   Token counts come from the provider's usage data; if the provider gives none, they are
   stored as null, never estimated. Gemini "thinking" tokens are billed as output, so they
   count toward output tokens and are also stored separately.
@@ -413,13 +436,14 @@ stopping the API from starting.
 |-------|------|-----|
 | `category` | required; prompts are selected by `prompts.category` | a run audits one product area |
 | `prompt_ids` | optional; 1–50 unique IDs, all in that category | narrow a run to some prompts |
-| `answer_providers` | 1–2 unique of `gemini`, `openai` | compare assistants, keep cost bounded |
+| `answer_providers` | 1–3 unique of `gemini`, `openai`, `groq` | compare assistants; `max_model_calls` bounds the cost |
 | `repeats` | 1–5, default 3 | stability without a large bill |
 | `agent_version` | `v1` or `v2`, default `v1` | which system prompt verifies (4.1) |
 | `max_model_calls` | 1–5,000, default 500 | hard budget (below) |
 
 Each answer provider writes answers with its own model setting (`GEMINI_ANSWER_MODEL`,
-`OPENAI_ANSWER_MODEL`); the verifier uses `VERIFIER_PROVIDER` / `VERIFIER_MODEL`.
+`OPENAI_ANSWER_MODEL`, `GROQ_ANSWER_MODEL`); the verifier uses `VERIFIER_PROVIDER` /
+`VERIFIER_MODEL`, with the optional fallback in 4.8.
 
 **Idempotency** (`POST /v1/audit-runs`):
 
@@ -439,8 +463,8 @@ table is the queue; no Celery or Redis.
 - **Heartbeat:** `heartbeat_at` is updated after every answer. Before claiming, a worker
   puts any `running` run whose heartbeat is older than `STALE_RUN_SECONDS` (default 900)
   back to `queued`: its worker has died.
-- **Startup check:** the worker builds the verifier client before taking work, so a
-  missing provider, model or key stops it at once.
+- **Startup check:** the worker builds the verifier client (and the fallback verifier, if
+  one is set) before taking work, so a missing provider, model or key stops it at once.
 - **Shutdown:** on SIGTERM or Ctrl+C, the current run is handed back to `queued` before
   its next model call, and the worker exits.
 
@@ -464,8 +488,10 @@ No database transaction is held open during a model call.
 **Budget.** `model_calls` on the run counts logical model calls (retries are attempts of
 one call and are not counted). Before each collection call it must stay within
 `max_model_calls`. Before verifying an answer, the worst case (`AGENT_MAX_TURNS`) is
-reserved; the unused turns are refunded afterwards. If the next call does not fit, the
-run stops with status `partial` and metrics for what was done.
+reserved; the unused turns are refunded afterwards. Before a fallback verification (4.8),
+the main attempt's unused turns are refunded and `AGENT_MAX_TURNS` is reserved again; if
+that does not fit, there is no fallback and the main attempt's failure is saved. If the
+next call does not fit, the run stops with status `partial` and metrics for what was done.
 
 **Run status:** `queued` → `running` → `completed` (every answer attempted, even if some
 failed), `partial` (budget reached), or `failed` (run-level problem; `failure_reason`
@@ -493,10 +519,14 @@ fails with a `config` error. `.env.example` lists every variable.
 | `DATABASE_URL` | yes | `postgresql+psycopg://...` in production; `sqlite:///...` for local use. A `postgres://` or `postgresql://` URL (as hosts such as Fly give it) is rewritten to use the psycopg driver. |
 | `GEMINI_API_KEY` | if Gemini is used | Held as a secret; never printed. |
 | `OPENAI_API_KEY` | if OpenAI is used | Held as a secret; never printed. |
-| `VERIFIER_PROVIDER` | to verify | `gemini` or `openai`. |
+| `GROQ_API_KEY` | if Groq is used | Held as a secret; never printed. Only the server uses it. |
+| `VERIFIER_PROVIDER` | to verify | `gemini`, `openai` or `groq`. |
 | `VERIFIER_MODEL` | to verify | Model ID. Empty by default; no model ID is hardcoded. |
+| `VERIFIER_FALLBACK_PROVIDER` | no | `gemini`, `openai` or `groq`. Empty means no fallback (4.8). |
+| `VERIFIER_FALLBACK_MODEL` | with a fallback provider | Model ID of the fallback verifier. |
 | `GEMINI_ANSWER_MODEL` | for Gemini runs | The model that writes audited answers. Empty by default. |
 | `OPENAI_ANSWER_MODEL` | for OpenAI runs | The model that writes audited answers. Empty by default. |
+| `GROQ_ANSWER_MODEL` | for Groq runs | The model that writes audited answers. Empty by default. |
 | `WORKER_POLL_SECONDS` | no | Default 5. How often an idle worker looks for queued runs. |
 | `STALE_RUN_SECONDS` | no | Default 900. A running run with an older heartbeat is requeued. |
 | `LLM_TIMEOUT_SECONDS` | no | Default 30. |
@@ -615,7 +645,7 @@ whitespace), so formatting and line endings do not change it.
 - Each report records the date, git commit (and whether there were uncommitted changes),
   provider, model, prompt version, settings, dataset version, fingerprint, split and
   answer IDs.
-- `is_real_run` is decided from the client's type (a Gemini or OpenAI client), never
+- `is_real_run` is decided from the client's type (a Gemini, OpenAI or Groq client), never
   passed in, so a fake client cannot produce a "real" report. A fake run's Markdown
   starts with `NOT A REAL RESULT`.
 - Reports are written to `reports/`, which git ignores. No result number is committed;
@@ -674,6 +704,10 @@ Fails (exit 1) if the mean joint F1 or the mean contradicted recall drops by mor
 - [ ] Idempotency: same key + same canonical body replays (`200`, `Idempotent-Replayed`); a different body is `409`; another client's identical key creates its own run; a lost race returns the winner.
 - [ ] A reviewed item cannot be decided twice (`409`).
 - [ ] `GET /v1/audit-runs` lists only the caller's runs, newest first; `limit`/`offset` page through them; `status` filters them; an invalid query is `422`.
+- [ ] Groq is built from `GROQ_API_KEY` / `GROQ_ANSWER_MODEL` and points the OpenAI SDK at `https://api.groq.com/openai/v1` with SDK retries off; its errors map like OpenAI's and name Groq.
+- [ ] Each provider (Gemini, OpenAI, Groq) can be built with only its own key, and `VERIFIER_PROVIDER` switches between all three.
+- [ ] A run may ask 1–3 unique providers; a failed Groq answer is `generation_failed` and never written by another provider.
+- [ ] A `provider` failure of the main verifier is verified again from the start by the fallback, recorded in `usage.fallback_from`, and counted in the budget; `prompt`/`tool` failures and a full budget do not fall back; `config` errors are still raised.
 - [ ] SPEC.md matches the implemented behaviour.
 
 ---

@@ -15,6 +15,7 @@ from auditor.evals.runner import (
     run_eval,
 )
 from auditor.llm.fake import ScriptedClient
+from auditor.llm.groq_client import GroqClient
 
 from ..audit.fakes import make_settings
 from ..conftest import DEMO_DIR
@@ -183,3 +184,29 @@ def test_worker_without_verifier_settings_exits_with_one_line(
     assert main(["worker", "--once"]) == 2
     output = capsys.readouterr().out
     assert output.splitlines() == ["config: no verifier provider given: set VERIFIER_PROVIDER"]
+
+
+class GroqOracle(GroqClient):
+    """A GroqClient whose replies come from the oracle instead of the network. Only the
+    client's type matters here: reports from Groq clients count as real runs."""
+
+    def __init__(self, oracle: OracleClient) -> None:  # no SDK client, no network
+        self.model = "groq-test-model"
+        self._oracle = oracle
+
+    def generate(self, **request):
+        return self._oracle.generate(**request)
+
+
+def test_a_groq_client_counts_as_a_real_run(dataset: Dataset, catalogue: InMemoryCatalogue) -> None:
+    brand_ids = [brand.brand_id for brand in catalogue.list_brands()]
+    report = run_eval(
+        dataset=dataset,
+        client_factory=lambda: GroqOracle(OracleClient(dataset, brand_ids)),
+        catalogue=catalogue,
+        settings=make_settings(verifier_provider="groq", verifier_model="groq-test-model"),
+        sleep=lambda _: None,
+        split="dev",
+        repeats=1,
+    )
+    assert report["is_real_run"] is True

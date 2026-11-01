@@ -112,12 +112,12 @@ export default function NewRunPage() {
 
           <Card
             title="Who to ask"
-            description="One or two assistants. Each is asked every prompt."
+            description="One to three assistants. Each is asked every prompt."
             icon={<Icon name="users" className="h-5 w-5" />}
           >
             <fieldset>
               <legend className="sr-only">Assistants</legend>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-3">
                 {PROVIDERS.map((provider) => {
                   const checked = values.providers.includes(provider.value)
                   return (

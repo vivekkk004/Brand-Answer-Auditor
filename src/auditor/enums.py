@@ -6,6 +6,8 @@ from enum import StrEnum
 class Provider(StrEnum):
     GEMINI = "gemini"
     OPENAI = "openai"
+    # Groq serves open models through an OpenAI-compatible API (llm/groq_client.py).
+    GROQ = "groq"
 
 
 class RunStatus(StrEnum):

@@ -35,8 +35,8 @@ export function validateRunForm(values) {
   } else if (promptIds && new Set(promptIds).size !== promptIds.length) {
     errors.prompt_ids = 'Each prompt ID may appear once.'
   }
-  if (values.providers.length < 1 || values.providers.length > 2) {
-    errors.answer_providers = 'Choose one or two assistants.'
+  if (values.providers.length < 1 || values.providers.length > 3) {
+    errors.answer_providers = 'Choose one to three assistants.'
   }
   if (!Number.isInteger(values.repeats) || values.repeats < 1 || values.repeats > 5) {
     errors.repeats = 'Between 1 and 5.'

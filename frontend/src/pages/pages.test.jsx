@@ -97,6 +97,24 @@ describe('app pages', () => {
     expect(await screen.findByText(/Metrics appear when the run finishes/)).toBeInTheDocument()
   })
 
+  it('can queue a run that asks Groq too', async () => {
+    const fetchMock = stubFetch({
+      ...HEALTH,
+      'POST /v1/audit-runs': () => jsonResponse(202, makeRun()),
+      [`GET /v1/audit-runs/${makeRun().id}`]: () => jsonResponse(200, makeRun()),
+    })
+    renderApp('/app/runs/new', { apiKey: TEST_KEY })
+
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'Groq' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Queue run' }))
+
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.some(([, init]) => init.method === 'POST')).toBe(true),
+    )
+    const post = fetchMock.mock.calls.find(([, init]) => init.method === 'POST')
+    expect(JSON.parse(post[1].body).answer_providers).toEqual(['gemini', 'groq'])
+  })
+
   it('links a failed verification to its saved answer', async () => {
     stubFetch({
       ...HEALTH,

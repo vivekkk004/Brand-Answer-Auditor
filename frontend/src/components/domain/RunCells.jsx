@@ -5,7 +5,7 @@ import { formatNumber, humanize, shortId } from '../../utils/format'
 import Icon from '../ui/Icon'
 
 // A colour dot per assistant, so the two providers are easy to tell apart in a list.
-const PROVIDER_DOT = { gemini: 'bg-sky-500', openai: 'bg-emerald-500' }
+const PROVIDER_DOT = { gemini: 'bg-sky-500', openai: 'bg-emerald-500', groq: 'bg-orange-500' }
 
 /** The run's short ID as a link, with a small icon tile and its category underneath. */
 export function RunIdCell({ run }) {

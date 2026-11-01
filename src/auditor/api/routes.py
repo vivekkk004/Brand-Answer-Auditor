@@ -9,7 +9,13 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from auditor.api import services
-from auditor.api.deps import ClientFactoryDep, ClientIdDep, SessionDep, SettingsDep
+from auditor.api.deps import (
+    ClientFactoryDep,
+    ClientIdDep,
+    FallbackClientFactoryDep,
+    SessionDep,
+    SettingsDep,
+)
 from auditor.api.errors import ApiError
 from auditor.api.schemas import (
     AnswerOut,
@@ -44,8 +50,11 @@ def verify(
     session: SessionDep,
     settings: SettingsDep,
     client_factory: ClientFactoryDep,
+    fallback_client_factory: FallbackClientFactoryDep,
 ) -> AnswerOut:
-    return services.verify_text(session, client_id, body, settings, client_factory)
+    return services.verify_text(
+        session, client_id, body, settings, client_factory, fallback_client_factory
+    )
 
 
 @router.post("/v1/audit-runs", status_code=202, response_model=RunOut)

@@ -15,7 +15,7 @@ class RunConfig(BaseModel):
     category: str = Field(pattern=ID_PATTERN, max_length=64)
     prompt_ids: list[str] | None = Field(default=None, min_length=1, max_length=50)
     # At most two providers: enough to compare assistants, small enough to stay cheap.
-    answer_providers: list[Provider] = Field(min_length=1, max_length=2)
+    answer_providers: list[Provider] = Field(min_length=1, max_length=3)
     # Repeats measure how stable the answers are; 5 keeps a demo run affordable.
     repeats: int = Field(default=3, ge=1, le=5)
     agent_version: Literal["v1", "v2"] = "v1"

@@ -14,8 +14,8 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from auditor.agent.fallback import Verifier, verify_with_fallback
 from auditor.agent.schemas import VerificationResult
-from auditor.agent.verifier import verify_answer
 from auditor.api.errors import ApiError
 from auditor.api.schemas import (
     AnswerOut,
@@ -48,6 +48,7 @@ def verify_text(
     request: VerifyRequest,
     settings: Settings,
     client_factory: Callable[[], LLMClient],
+    fallback_client_factory: Callable[[], LLMClient | None] = lambda: None,
 ) -> AnswerOut:
     """Verify one answer now. The answer row is saved BEFORE the model is called, so a
     failed attempt is kept (and counted) too; its ID is returned in the error body."""
@@ -64,9 +65,17 @@ def verify_text(
     session.commit()
 
     try:
-        result = verify_answer(
+        main = Verifier(settings.verifier_provider, client_factory())
+        fallback_client = fallback_client_factory()
+        fallback = (
+            Verifier(settings.verifier_fallback_provider, fallback_client)
+            if fallback_client
+            else None
+        )
+        outcome = verify_with_fallback(
+            main=main,
+            fallback=fallback,
             answer_text=request.text,
-            client=client_factory(),
             catalogue=InMemoryCatalogue(catalogue),
             market=request.market,
             prompt_version=request.prompt_version,
@@ -80,7 +89,8 @@ def verify_text(
         session.commit()
         raise ApiError(503, "verifier_not_configured", str(exc), answer_id=str(answer.id)) from exc
 
-    save_verification(session, answer, result, settings.verifier_provider)
+    result = outcome.result
+    save_verification(session, answer, result, outcome.provider, outcome.fallback_from)
     session.commit()
     if not result.ok:
         raise _verification_error(answer.id, result)

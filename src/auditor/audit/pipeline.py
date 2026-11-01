@@ -24,7 +24,8 @@ from pydantic import ValidationError
 from sqlalchemy import Select, select, update
 from sqlalchemy.orm import Session, sessionmaker
 
-from auditor.agent.verifier import verify_answer
+from auditor.agent.fallback import Verifier, verify_with_fallback
+from auditor.agent.schemas import VerificationResult
 from auditor.audit.mentions import MentionDetector
 from auditor.audit.persistence import save_verification, usage_dict
 from auditor.audit.run_config import RunConfig
@@ -40,7 +41,11 @@ from auditor.llm.errors import (
     ProviderTimeoutError,
     TransientProviderError,
 )
-from auditor.llm.factory import build_answer_client, build_verifier_client
+from auditor.llm.factory import (
+    build_answer_client,
+    build_fallback_verifier_client,
+    build_verifier_client,
+)
 from auditor.llm.retry import call_with_retries
 from auditor.llm.types import LLMClient, Message
 from auditor.metrics import estimate_cost_usd, wilson_interval
@@ -128,12 +133,16 @@ def process_run(
     settings: Settings,
     answer_client_for: Callable[[Provider], LLMClient] | None = None,
     verifier_client: LLMClient | None = None,
+    fallback_verifier_client: LLMClient | None = None,
     sleep: Callable[[float], None] = time.sleep,
     rand: Callable[[], float] = random.random,
     now: Callable[[], datetime] = utc_now,
     should_stop: Callable[[], bool] = lambda: False,
 ) -> RunStatus:
     """Process one claimed run to the end and return its final status.
+
+    Clients not passed in are built from settings; the fallback verifier is optional
+    (VERIFIER_FALLBACK_PROVIDER).
 
     Failures end the run with a reason that starts with its type:
     - "config: ..." for a missing key or model. It is an expected setup problem, so it
@@ -149,6 +158,7 @@ def process_run(
             answer_client_for=answer_client_for
             or (lambda provider: build_answer_client(provider, settings)),
             verifier_client=verifier_client,
+            fallback_verifier_client=fallback_verifier_client,
             sleep=sleep,
             rand=rand,
             now=now,
@@ -172,6 +182,7 @@ def _process(
     settings: Settings,
     answer_client_for: Callable[[Provider], LLMClient],
     verifier_client: LLMClient | None,
+    fallback_verifier_client: LLMClient | None,
     sleep: Callable[[float], None],
     rand: Callable[[], float],
     now: Callable[[], datetime],
@@ -191,7 +202,13 @@ def _process(
     # Build every client before the first call, so a missing key or model fails the run
     # at once instead of after half the answers have been paid for.
     answer_clients = {provider: answer_client_for(provider) for provider in config.answer_providers}
-    verifier = verifier_client or build_verifier_client(settings)
+    main_verifier = Verifier(
+        settings.verifier_provider, verifier_client or build_verifier_client(settings)
+    )
+    fallback_client = fallback_verifier_client or build_fallback_verifier_client(settings)
+    fallback_verifier = (
+        Verifier(settings.verifier_fallback_provider, fallback_client) if fallback_client else None
+    )
     detector = MentionDetector(catalogue.brands)
     max_turns = settings.agent_max_turns
 
@@ -243,9 +260,23 @@ def _process(
         if not budget_ok:
             return _finish(session_factory, run_id, RunStatus.PARTIAL, settings, now)
 
-        result = verify_answer(
+        def reserve_fallback(first: VerificationResult) -> bool:
+            # Hand back the main attempt's unused turns, then reserve a whole new
+            # verification for the fallback. No room in the budget means no fallback:
+            # the main attempt's failure is saved as it is.
+            with session_factory.begin() as session:
+                run = session.get(db.AuditRun, run_id)
+                after_refund = run.model_calls - (max_turns - first.turns)
+                if after_refund + max_turns > run.max_model_calls:
+                    return False
+                run.model_calls = after_refund + max_turns
+                return True
+
+        outcome = verify_with_fallback(
+            main=main_verifier,
+            fallback=fallback_verifier,
+            can_fall_back=reserve_fallback,
             answer_text=answer_text,
-            client=verifier,
             catalogue=verifier_catalogue,
             market=market,
             prompt_version=config.agent_version,
@@ -257,10 +288,15 @@ def _process(
 
         with session_factory.begin() as session:
             run = session.get(db.AuditRun, run_id)
-            run.model_calls -= max_turns - result.turns
+            # Refund the unused turns of the last reservation (main or fallback).
+            run.model_calls -= max_turns - outcome.result.turns
             run.heartbeat_at = now()
             save_verification(
-                session, session.get(db.Answer, answer_id), result, settings.verifier_provider
+                session,
+                session.get(db.Answer, answer_id),
+                outcome.result,
+                outcome.provider,
+                outcome.fallback_from,
             )
 
     return _finish(session_factory, run_id, RunStatus.COMPLETED, settings, now)

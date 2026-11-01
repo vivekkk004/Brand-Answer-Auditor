@@ -36,6 +36,15 @@ SettingsDep = Annotated[Settings, Depends(get_settings)]
 ClientFactoryDep = Annotated[Callable[[], LLMClient], Depends(get_client_factory)]
 
 
+def get_fallback_client_factory(request: Request) -> Callable[[], LLMClient | None]:
+    return request.app.state.fallback_client_factory
+
+
+FallbackClientFactoryDep = Annotated[
+    Callable[[], LLMClient | None], Depends(get_fallback_client_factory)
+]
+
+
 def current_client_id(
     session: SessionDep,
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],

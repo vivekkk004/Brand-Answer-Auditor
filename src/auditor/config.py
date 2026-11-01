@@ -18,14 +18,21 @@ class Settings(BaseSettings):
 
     gemini_api_key: SecretStr | None = None
     openai_api_key: SecretStr | None = None
+    groq_api_key: SecretStr | None = None
 
     # Left empty on purpose: model IDs change often, so they must be set explicitly.
     # Code that needs them raises a `config` error when they are missing.
     verifier_provider: Provider | None = None
     verifier_model: str = ""
+    # Optional second verifier, used for an answer only when the first one fails with a
+    # provider error (SPEC 4.8). Answer models never fall back: that would credit one
+    # assistant's words to another.
+    verifier_fallback_provider: Provider | None = None
+    verifier_fallback_model: str = ""
     # The models that write the audited answers, one per provider.
     gemini_answer_model: str = ""
     openai_answer_model: str = ""
+    groq_answer_model: str = ""
 
     llm_timeout_seconds: float = Field(default=30.0, gt=0)
     llm_max_retries: int = Field(default=3, ge=0, le=10)
