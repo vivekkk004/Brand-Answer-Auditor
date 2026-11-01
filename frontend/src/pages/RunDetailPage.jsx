@@ -1,0 +1,222 @@
+import { useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import { useLocation, useParams } from 'react-router-dom'
+import InclusionTable from '../components/domain/InclusionTable'
+import LabelShareBar from '../components/domain/LabelShareBar'
+import RunConfigSummary from '../components/domain/RunConfigSummary'
+import { RunStatusBadge } from '../components/domain/StatusBadges'
+import { Button } from '../components/ui/Button'
+import Card from '../components/ui/Card'
+import ErrorBanner from '../components/ui/ErrorBanner'
+import Icon from '../components/ui/Icon'
+import PageHeader from '../components/ui/PageHeader'
+import Spinner from '../components/ui/Spinner'
+import StatCard from '../components/ui/StatCard'
+import { fetchRun, selectRunById } from '../features/runs/runsSlice'
+import { PATHS } from '../routes/paths'
+import { ACTIVE_RUN_STATUSES } from '../utils/constants'
+import { formatDateTime, formatNumber, formatUsd, humanize, shortId } from '../utils/format'
+
+const POLL_MS = 3000
+
+function Timeline({ run }) {
+  const steps = [
+    { label: 'Queued', at: run.created_at, done: true },
+    { label: 'Started', at: run.started_at, done: Boolean(run.started_at) },
+    { label: humanize(run.finished_at ? run.status : 'finished'), at: run.finished_at, done: Boolean(run.finished_at) },
+  ]
+  return (
+    <ol className="space-y-4">
+      {steps.map((step) => (
+        <li key={step.label} className="flex items-start gap-3">
+          <span
+            className={`mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full ${
+              step.done ? 'bg-indigo-600 text-white' : 'border-2 border-slate-200 bg-white'
+            }`}
+          >
+            {step.done ? <Icon name="check" className="h-3 w-3" /> : null}
+          </span>
+          <div>
+            <p className={`text-sm font-medium ${step.done ? 'text-slate-900' : 'text-slate-400'}`}>
+              {step.label}
+            </p>
+            <p className="text-xs text-slate-500">{step.done ? formatDateTime(step.at) : 'Waiting'}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+function TokensTable({ tokens }) {
+  const rows = ['generation', 'verification', 'total']
+  return (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="text-left text-xs text-slate-500 uppercase">
+          <th className="pb-2 font-medium">Phase</th>
+          <th className="pb-2 text-right font-medium">Input</th>
+          <th className="pb-2 text-right font-medium">Output</th>
+          <th className="pb-2 text-right font-medium">Thinking</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-slate-100">
+        {rows.map((phase) => (
+          <tr key={phase} className={phase === 'total' ? 'font-semibold' : ''}>
+            <td className="py-2 text-slate-700">{humanize(phase)}</td>
+            <td className="py-2 text-right">{formatNumber(tokens?.[phase]?.input)}</td>
+            <td className="py-2 text-right">{formatNumber(tokens?.[phase]?.output)}</td>
+            <td className="py-2 text-right">{formatNumber(tokens?.[phase]?.thinking)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+function Metrics({ metrics }) {
+  const answers = metrics.answers || {}
+  const errors = Object.entries(metrics.errors_by_type || {})
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Answers" value={formatNumber(answers.total)} icon="runs" />
+        <StatCard label="Verified" value={formatNumber(answers.verified)} icon="check" tone="green" />
+        <StatCard
+          label="Failed"
+          value={formatNumber((answers.generation_failed || 0) + (answers.verification_failed || 0))}
+          hint="Generation + verification"
+          icon="alert"
+          tone="red"
+        />
+        <StatCard label="Estimated cost" value={formatUsd(metrics.cost_usd)} icon="chart" tone="slate" />
+      </div>
+
+      <Card
+        title="Brand inclusion"
+        description="How often each brand was named, with a 95% Wilson confidence interval."
+        bodyClassName=""
+      >
+        <InclusionTable inclusion={metrics.inclusion} />
+      </Card>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card title="Claim labels" description={`${formatNumber(metrics.claims?.total ?? 0)} verified claims`}>
+          <LabelShareBar labels={metrics.claims?.labels || {}} total={metrics.claims?.total} />
+        </Card>
+        <Card title="Failures by type" description="Each failure is typed, so it can be fixed at the source.">
+          {errors.length ? (
+            <ul className="divide-y divide-slate-100">
+              {errors.map(([type, count]) => (
+                <li key={type} className="flex justify-between py-2 text-sm">
+                  <span className="font-medium text-slate-700">{humanize(type)}</span>
+                  <span className="text-slate-900">{formatNumber(count)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-slate-500">No failures.</p>
+          )}
+        </Card>
+      </div>
+
+      <Card title="Tokens" description="As reported by the providers, never estimated.">
+        <TokensTable tokens={metrics.tokens} />
+      </Card>
+    </div>
+  )
+}
+
+export default function RunDetailPage() {
+  const { runId } = useParams()
+  const location = useLocation()
+  const dispatch = useDispatch()
+  const run = useSelector(selectRunById(runId))
+  const { status, error } = useSelector((state) => state.runs.detail)
+
+  // Keep polling while the run can still change; stop once it is final or failed to load.
+  const active = run ? ACTIVE_RUN_STATUSES.includes(run.status) : !error
+
+  useEffect(() => {
+    dispatch(fetchRun(runId))
+  }, [dispatch, runId])
+
+  useEffect(() => {
+    if (!active) return undefined
+    const timer = setInterval(() => dispatch(fetchRun(runId)), POLL_MS)
+    return () => clearInterval(timer)
+  }, [active, dispatch, runId])
+
+  if (!run) {
+    return (
+      <>
+        <PageHeader title="Audit run" back={{ to: PATHS.runs, label: 'Audit runs' }} />
+        {status === 'failed' ? (
+          <ErrorBanner error={error} title="Could not load this run" onRetry={() => dispatch(fetchRun(runId))} />
+        ) : (
+          <Spinner label="Loading run…" />
+        )}
+      </>
+    )
+  }
+
+  return (
+    <>
+      <PageHeader
+        title={
+          <span className="flex flex-wrap items-center gap-3">
+            Run <span className="font-mono text-xl text-slate-500">{shortId(run.id)}</span>
+            <RunStatusBadge status={run.status} />
+          </span>
+        }
+        description={`Created ${formatDateTime(run.created_at)}`}
+        back={{ to: PATHS.runs, label: 'Audit runs' }}
+        actions={
+          <Button variant="secondary" onClick={() => dispatch(fetchRun(runId))} loading={status === 'loading'}>
+            <Icon name="refresh" className="h-4 w-4" />
+            Refresh
+          </Button>
+        }
+      />
+
+      {location.state?.replayed ? (
+        <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+          This request was already made, so the existing run is shown — no second run was started.
+        </div>
+      ) : null}
+
+      {run.failure_reason ? (
+        <div className="mb-6">
+          <ErrorBanner error={{ message: run.failure_reason }} title="The run failed" />
+        </div>
+      ) : null}
+
+      <div className="mb-6 grid gap-6 lg:grid-cols-3">
+        <Card title="Configuration" className="lg:col-span-2">
+          <RunConfigSummary config={run.config} modelCalls={run.model_calls} maxModelCalls={run.max_model_calls} />
+        </Card>
+        <Card title="Progress">
+          <Timeline run={run} />
+        </Card>
+      </div>
+
+      {run.metrics ? (
+        <Metrics metrics={run.metrics} />
+      ) : (
+        <Card>
+          <div className="flex items-start gap-4">
+            <Spinner />
+            <div className="text-sm text-slate-600">
+              <p className="font-medium text-slate-900">Metrics appear when the run finishes.</p>
+              <p className="mt-1">
+                This page refreshes every {POLL_MS / 1000} seconds while the run is queued or
+                running. Runs are processed by a separate worker (<code className="rounded bg-slate-100 px-1">auditor worker</code>);
+                if it stays queued, check that a worker is running and configured.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+    </>
+  )
+}

@@ -10,8 +10,8 @@ A service that audits what AI assistants say about brands.
 
 The full behaviour is specified in [SPEC.md](SPEC.md); the code must match it.
 
-> **Status:** the pipeline, API, worker and eval harness are built and tested with fake
-> model clients. **No live eval has been run yet, so there are no accuracy results.**
+> **Status:** the pipeline, API, worker, eval harness and web UI are built and tested with
+> fake model clients. **No live eval has been run yet, so there are no accuracy results.**
 > All brands and facts in `data/demo/` are fictional.
 
 ## How it works
@@ -73,6 +73,27 @@ ruff format --check .
 pytest
 ```
 
+## Web UI
+
+A React app in `frontend/` (Redux Toolkit, React Router, Tailwind CSS). It only calls the
+public API below; the key is kept in the browser tab's `sessionStorage`.
+
+- **Landing page** — what the service does, how it works, how it stays reliable.
+- **Overview** — API health, open review items, recent runs.
+- **Audit runs** — list, filter, queue a new run (idempotent), and a detail page that
+  refreshes while the run is queued or running, then shows inclusion with Wilson intervals,
+  label shares, failures by type, tokens and cost.
+- **Verify answer** — check one answer now; failed attempts link to the saved answer.
+- **Answer** — the text with claims highlighted by label, cited fact IDs, and the agent's
+  full conversation (every tool call and result).
+- **Review queue** — confirm or dismiss contradicted claims, once.
+
+```
+cd frontend
+npm install
+npm run dev        # http://localhost:5173 (API on :8000; /v1 and /healthz are proxied)
+```
+
 ## API
 
 All `/v1/*` endpoints need `Authorization: Bearer <key>`. Errors use one shape:
@@ -83,6 +104,7 @@ All `/v1/*` endpoints need `Authorization: Bearer <key>`. Errors use one shape:
 | `GET /healthz` | Liveness + database ping | `200` | `503` |
 | `POST /v1/verify` | Verify one answer text now | `200` | `502`, `504`, `503`, `500` (with `answer_id`) |
 | `POST /v1/audit-runs` | Queue a run; needs `Idempotency-Key` | `202` (+ `Location`), `200` replay | `400`, `409`, `422` |
+| `GET /v1/audit-runs?status=` | List my runs, newest first (`limit`, `offset`) | `200` | `422` |
 | `GET /v1/audit-runs/{id}` | Status, config, metrics | `200` | `404` |
 | `GET /v1/answers/{id}` | Answer, claims, agent conversation | `200` | `404` |
 | `GET /v1/review-items?status=` | Review queue | `200` | `422` |
@@ -134,6 +156,7 @@ src/auditor/
 migrations/    Alembic
 data/demo/     fictional catalogue, prompts, eval set
 tests/         pytest; no test calls a real model API
+frontend/      React web UI (services, Redux slices, routes, pages, components)
 ```
 
 Deployment: `Dockerfile` (one image for API and worker), `docker-compose.yml`,

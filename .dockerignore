@@ -16,3 +16,7 @@ dist
 reports
 
 tests
+
+# The web UI is built and served separately; the API image does not need it.
+frontend
+docs

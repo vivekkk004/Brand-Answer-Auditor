@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+/* One light theme only. Colours come from Tailwind's palette: slate for text and surfaces,
+   indigo as the single brand colour, and fixed meanings for status colours
+   (emerald = good, amber = attention, rose = problem). */
+@theme {
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+}
+
+/* Visible keyboard focus everywhere, without changing mouse clicks. */
+:focus-visible {
+  @apply outline-2 outline-offset-2 outline-indigo-500;
+}
