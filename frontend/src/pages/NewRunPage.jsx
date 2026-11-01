@@ -7,7 +7,7 @@ import DescriptionList from '../components/ui/DescriptionList'
 import ErrorBanner from '../components/ui/ErrorBanner'
 import Field from '../components/ui/Field'
 import Icon from '../components/ui/Icon'
-import { INPUT_CLASSES } from '../components/ui/inputStyles'
+import { INPUT_CLASSES, SELECT_CLASSES } from '../components/ui/inputStyles'
 import PageHeader from '../components/ui/PageHeader'
 import {
   INITIAL_RUN_VALUES,
@@ -69,6 +69,7 @@ export default function NewRunPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Audit runs"
         title="New audit run"
         description="Ask AI assistants your category prompts, then verify every answer."
         back={{ to: PATHS.runs, label: 'Audit runs' }}
@@ -173,7 +174,7 @@ export default function NewRunPage() {
               <Field id="agent-version" label="Agent prompt">
                 <select
                   id="agent-version"
-                  className={INPUT_CLASSES}
+                  className={SELECT_CLASSES}
                   value={values.agentVersion}
                   onChange={(event) => update('agentVersion', event.target.value)}
                 >

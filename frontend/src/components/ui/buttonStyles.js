@@ -5,8 +5,9 @@ const BASE =
 
 const VARIANTS = {
   primary:
-    'bg-indigo-600 text-white shadow-sm shadow-indigo-600/20 ring-1 ring-inset ring-white/10 ' +
-    'hover:bg-indigo-500 hover:shadow-md hover:shadow-indigo-600/25',
+    'bg-gradient-to-b from-indigo-500 to-indigo-600 text-white shadow-md shadow-indigo-600/30 ' +
+    'ring-1 ring-inset ring-white/15 hover:from-indigo-500 hover:to-violet-600 ' +
+    'hover:shadow-lg hover:shadow-indigo-600/35',
   secondary:
     'bg-white text-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 hover:text-slate-900',
   ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
@@ -14,7 +15,7 @@ const VARIANTS = {
   success: 'bg-emerald-600 text-white shadow-sm hover:bg-emerald-500',
   // For use on coloured (indigo/violet) backgrounds.
   white: 'bg-white text-indigo-700 shadow-sm hover:bg-indigo-50',
-  glass: 'bg-white/10 text-white ring-1 ring-inset ring-white/25 hover:bg-white/20',
+  glass: 'bg-white/10 text-white ring-1 ring-inset ring-white/20 backdrop-blur hover:bg-white/20',
 }
 
 const SIZES = {

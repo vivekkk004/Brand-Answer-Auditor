@@ -8,6 +8,8 @@ export const PROVIDERS = [
   { value: 'gemini', label: 'Google Gemini' },
   { value: 'openai', label: 'OpenAI' },
 ]
+// Short names for chips and lists.
+export const PROVIDER_SHORT = { gemini: 'Gemini', openai: 'OpenAI' }
 export const MARKETS = [
   { value: '', label: 'Not given' },
   { value: 'IN', label: 'India (IN)' },
@@ -41,8 +43,11 @@ export const LABEL_HIGHLIGHT = {
   contradicted: 'bg-rose-100 decoration-rose-500',
   unknown: 'bg-amber-100 decoration-amber-500',
 }
+// Bar colours, checked for colour-blind separation in this order: supported, unknown,
+// contradicted (amber sits between green and red so those two never touch).
+export const LABEL_ORDER = ['supported', 'unknown', 'contradicted']
 export const LABEL_BAR = {
-  supported: 'bg-emerald-500',
-  contradicted: 'bg-rose-500',
-  unknown: 'bg-amber-400',
+  supported: 'bg-emerald-600',
+  unknown: 'bg-amber-500',
+  contradicted: 'bg-rose-600',
 }

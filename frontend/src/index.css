@@ -5,7 +5,14 @@
    status colours (emerald = good, amber = attention, rose = problem). */
 @theme {
   --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
-  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 1px 3px rgb(15 23 42 / 0.06);
+  --font-display: "Plus Jakarta Sans", "Inter", "Segoe UI", system-ui, sans-serif;
+
+  /* "Ink": the deep navy used for the sidebar and the dark hero panels. */
+  --color-ink-950: #070b1a;
+  --color-ink-900: #0c1229;
+  --color-ink-800: #151d3d;
+  --color-ink-700: #222c52;
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 16px -6px rgb(15 23 42 / 0.08);
   --shadow-float: 0 20px 45px -12px rgb(30 27 75 / 0.18), 0 8px 16px -8px rgb(15 23 42 / 0.12);
 
   /* Animations, used as animate-fade-up, animate-float, ... (mostly in the landing hero). */
@@ -159,9 +166,32 @@
    and shadow. Change it here and every card follows. */
 @utility surface {
   border-radius: var(--radius-2xl);
-  border: 1px solid rgb(226 232 240 / 0.8);
+  border: 1px solid rgb(226 232 240 / 0.9);
   background-color: var(--color-white);
   box-shadow: var(--shadow-card);
+}
+
+/* A select without the browser's arrow, with a small chevron drawn on the right. */
+@utility select-chevron {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 0.65rem center;
+  background-repeat: no-repeat;
+  background-size: 1rem;
+}
+
+/* The gradient tile that holds a card or stat icon. */
+@utility icon-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border-radius: var(--radius-xl);
+  color: var(--color-white);
+  background-image: linear-gradient(135deg, var(--color-indigo-500), var(--color-violet-600));
+  box-shadow:
+    0 6px 14px -6px rgb(79 70 229 / 0.55),
+    inset 0 1px 0 rgb(255 255 255 / 0.25);
 }
 
 :root {
@@ -171,7 +201,25 @@
 h1,
 h2,
 h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.015em;
   text-wrap: balance;
+}
+
+/* Soft colour washes behind the app pages, so the canvas is not flat grey. */
+@utility bg-app-wash {
+  background-image:
+    radial-gradient(60rem 28rem at 15% -8rem, rgb(99 102 241 / 0.10), transparent 70%),
+    radial-gradient(48rem 24rem at 95% -6rem, rgb(139 92 246 / 0.09), transparent 70%);
+  background-repeat: no-repeat;
+}
+
+/* The dark "ink" panel: sidebar, dashboard hero, run hero. */
+@utility bg-ink {
+  background-color: var(--color-ink-950);
+  background-image:
+    radial-gradient(36rem 18rem at 0% 0%, rgb(99 102 241 / 0.28), transparent 70%),
+    radial-gradient(30rem 16rem at 100% 100%, rgb(139 92 246 / 0.22), transparent 70%);
 }
 
 ::selection {

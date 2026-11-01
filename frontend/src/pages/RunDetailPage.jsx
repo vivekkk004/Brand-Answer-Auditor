@@ -3,8 +3,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useLocation, useParams } from 'react-router-dom'
 import InclusionTable from '../components/domain/InclusionTable'
 import LabelShareBar from '../components/domain/LabelShareBar'
-import RunConfigSummary from '../components/domain/RunConfigSummary'
-import { RunStatusBadge } from '../components/domain/StatusBadges'
+import RunHero from '../components/domain/RunHero'
 import Alert from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
 import Card from '../components/ui/Card'
@@ -17,7 +16,7 @@ import StatCard from '../components/ui/StatCard'
 import { fetchRun, selectRunById } from '../features/runs/runsSlice'
 import { PATHS } from '../routes/paths'
 import { ACTIVE_RUN_STATUSES } from '../utils/constants'
-import { formatDateTime, formatNumber, formatUsd, humanize, shortId } from '../utils/format'
+import { formatDateTime, formatNumber, formatPercent, formatUsd, humanize } from '../utils/format'
 
 const POLL_MS = 3000
 
@@ -102,38 +101,69 @@ function TokensTable({ tokens }) {
   )
 }
 
-function Metrics({ metrics }) {
+function Metrics({ metrics, progress }) {
   const answers = metrics.answers || {}
   const errors = Object.entries(metrics.errors_by_type || {})
+  const failed = (answers.generation_failed || 0) + (answers.verification_failed || 0)
+  // Shares for the bars under the numbers, computed from the run's own counts.
+  const shareOf = (count) => (answers.total ? count / answers.total : null)
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Answers" value={formatNumber(answers.total)} icon="runs" />
-        <StatCard label="Verified" value={formatNumber(answers.verified)} icon="check" tone="green" />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Answers" value={formatNumber(answers.total)} icon="runs" hint="Collected from the assistants" />
+        <StatCard
+          label="Verified"
+          value={formatNumber(answers.verified)}
+          icon="check"
+          tone="green"
+          progress={shareOf(answers.verified || 0)}
+          hint={`${formatPercent(shareOf(answers.verified || 0))} of answers`}
+        />
         <StatCard
           label="Failed"
-          value={formatNumber((answers.generation_failed || 0) + (answers.verification_failed || 0))}
-          hint="Generation + verification"
+          value={formatNumber(failed)}
           icon="alert"
           tone="red"
+          progress={shareOf(failed)}
+          hint="Generation + verification"
         />
-        <StatCard label="Estimated cost" value={formatUsd(metrics.cost_usd)} icon="chart" tone="slate" />
+        <StatCard
+          label="Estimated cost"
+          value={formatUsd(metrics.cost_usd)}
+          icon="bolt"
+          tone="amber"
+          hint="From reported tokens"
+        />
       </div>
 
-      <Card
-        title="Brand inclusion"
-        description="How often each brand was named, with a 95% Wilson confidence interval."
-        icon={<Icon name="chart" className="h-5 w-5" />}
-        bodyClassName=""
-      >
-        <InclusionTable inclusion={metrics.inclusion} />
-      </Card>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card title="Claim labels" description={`${formatNumber(metrics.claims?.total ?? 0)} verified claims`}>
-          <LabelShareBar labels={metrics.claims?.labels || {}} total={metrics.claims?.total} />
+      <div className="grid gap-6 lg:grid-cols-3 lg:items-start">
+        <Card
+          className="lg:col-span-2"
+          title="Brand inclusion"
+          description="How often each brand was named, with a 95% Wilson confidence interval."
+          icon={<Icon name="chart" className="h-5 w-5" />}
+          bodyClassName=""
+        >
+          <InclusionTable inclusion={metrics.inclusion} />
         </Card>
-        <Card title="Failures by type" description="Each failure is typed, so it can be fixed at the source.">
+        <div className="min-w-0 space-y-6">
+          <Card
+            title="Claim labels"
+            description={`${formatNumber(metrics.claims?.total ?? 0)} verified claims`}
+            icon={<Icon name="verify" className="h-5 w-5" />}
+          >
+            <LabelShareBar labels={metrics.claims?.labels || {}} total={metrics.claims?.total} />
+          </Card>
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+        {progress}
+        <Card
+          title="Failures by type"
+          description="Each failure is typed, so it can be fixed at the source."
+          icon={<Icon name="alert" className="h-5 w-5" />}
+        >
           {errors.length ? (
             <ul className="divide-y divide-slate-100">
               {errors.map(([type, count]) => (
@@ -154,13 +184,15 @@ function Metrics({ metrics }) {
         </Card>
       </div>
 
-      <Card
-        title="Tokens"
-        description="As reported by the providers, never estimated."
-        icon={<Icon name="code" className="h-5 w-5" />}
-      >
-        <TokensTable tokens={metrics.tokens} />
-      </Card>
+      <div>
+        <Card
+          title="Tokens"
+          description="As reported by the providers, never estimated."
+          icon={<Icon name="code" className="h-5 w-5" />}
+        >
+          <TokensTable tokens={metrics.tokens} />
+        </Card>
+      </div>
     </div>
   )
 }
@@ -198,19 +230,19 @@ export default function RunDetailPage() {
     )
   }
 
+  const progress = (
+    <Card title="Progress" icon={<Icon name="runs" className="h-5 w-5" />}>
+      <Timeline run={run} />
+    </Card>
+  )
+
   return (
     <>
-      <PageHeader
-        title={
-          <span className="flex flex-wrap items-center gap-3">
-            Run <span className="font-mono text-lg text-slate-500 sm:text-xl">{shortId(run.id)}</span>
-            <RunStatusBadge status={run.status} />
-          </span>
-        }
-        description={`Created ${formatDateTime(run.created_at)}`}
-        back={{ to: PATHS.runs, label: 'Audit runs' }}
+      <PageHeader back={{ to: PATHS.runs, label: 'Audit runs' }} />
+      <RunHero
+        run={run}
         actions={
-          <Button variant="secondary" onClick={() => dispatch(fetchRun(runId))} loading={status === 'loading'}>
+          <Button variant="glass" size="sm" onClick={() => dispatch(fetchRun(runId))} loading={status === 'loading'}>
             <Icon name="refresh" className="h-4 w-4" />
             Refresh
           </Button>
@@ -231,33 +263,28 @@ export default function RunDetailPage() {
         </div>
       ) : null}
 
-      <div className="mb-6 grid gap-6 lg:grid-cols-3">
-        <Card title="Configuration" className="lg:col-span-2" icon={<Icon name="tool" className="h-5 w-5" />}>
-          <RunConfigSummary config={run.config} modelCalls={run.model_calls} maxModelCalls={run.max_model_calls} />
-        </Card>
-        <Card title="Progress" icon={<Icon name="runs" className="h-5 w-5" />}>
-          <Timeline run={run} />
-        </Card>
-      </div>
-
       {run.metrics ? (
-        <Metrics metrics={run.metrics} />
+        <Metrics metrics={run.metrics} progress={progress} />
       ) : (
-        <Card>
-          <div className="flex items-start gap-4">
-            <div className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-indigo-50 ring-1 ring-indigo-100">
-              <Spinner className="h-5 w-5 text-indigo-600" />
+        <div className="grid gap-6 lg:grid-cols-3 lg:items-start">
+          {progress}
+          <Card className="lg:col-span-2">
+            <div className="flex items-start gap-4">
+              <div className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-indigo-50 ring-1 ring-indigo-100">
+                <Spinner className="h-5 w-5 text-indigo-600" />
+              </div>
+              <div className="text-sm leading-6 text-slate-600">
+                <p className="font-medium text-slate-900">Metrics appear when the run finishes.</p>
+                <p className="mt-1">
+                  This page refreshes every {POLL_MS / 1000} seconds while the run is queued or
+                  running. Runs are processed by a separate worker (
+                  <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-700">auditor worker</code>
+                  ); if it stays queued, check that a worker is running and configured.
+                </p>
+              </div>
             </div>
-            <div className="text-sm leading-6 text-slate-600">
-              <p className="font-medium text-slate-900">Metrics appear when the run finishes.</p>
-              <p className="mt-1">
-                This page refreshes every {POLL_MS / 1000} seconds while the run is queued or
-                running. Runs are processed by a separate worker (<code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-700">auditor worker</code>);
-                if it stays queued, check that a worker is running and configured.
-              </p>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
       )}
     </>
   )

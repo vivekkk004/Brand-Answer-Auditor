@@ -9,7 +9,7 @@ import Card from '../components/ui/Card'
 import ErrorBanner from '../components/ui/ErrorBanner'
 import Field from '../components/ui/Field'
 import Icon from '../components/ui/Icon'
-import { INPUT_CLASSES } from '../components/ui/inputStyles'
+import { INPUT_CLASSES, SELECT_CLASSES } from '../components/ui/inputStyles'
 import PageHeader from '../components/ui/PageHeader'
 import { verifyText } from '../features/verify/verifySlice'
 import { answerPath } from '../routes/paths'
@@ -47,12 +47,18 @@ export default function VerifyPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Verification agent"
         title="Verify an answer"
         description="Paste an AI assistant's answer. The agent extracts its product claims and checks each one against the catalogue."
       />
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+        <Card
+          className="lg:col-span-2"
+          title="Answer to check"
+          description="Paste the text exactly as the assistant wrote it."
+          icon={<Icon name="search" className="h-5 w-5" />}
+        >
           <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             <Field
               id="answer-text"
@@ -84,7 +90,7 @@ export default function VerifyPage() {
                 <Field id="market" label="Market">
                   <select
                     id="market"
-                    className={INPUT_CLASSES}
+                    className={SELECT_CLASSES}
                     value={market}
                     onChange={(event) => setMarket(event.target.value)}
                   >
@@ -100,7 +106,7 @@ export default function VerifyPage() {
                 <Field id="prompt-version" label="Agent prompt">
                   <select
                     id="prompt-version"
-                    className={INPUT_CLASSES}
+                    className={SELECT_CLASSES}
                     value={promptVersion}
                     onChange={(event) => setPromptVersion(event.target.value)}
                   >

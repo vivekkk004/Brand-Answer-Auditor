@@ -5,7 +5,6 @@ import AgentConversation from '../components/domain/AgentConversation'
 import ClaimList from '../components/domain/ClaimList'
 import HighlightedAnswer from '../components/domain/HighlightedAnswer'
 import { AnswerStatusBadge } from '../components/domain/StatusBadges'
-import Badge from '../components/ui/Badge'
 import Card from '../components/ui/Card'
 import DescriptionList from '../components/ui/DescriptionList'
 import EmptyState from '../components/ui/EmptyState'
@@ -70,9 +69,10 @@ export default function AnswerPage() {
   return (
     <>
       <PageHeader
+        eyebrow={answer.run_id ? 'Answer from an audit run' : 'Submitted answer'}
         title={
           <span className="flex flex-wrap items-center gap-3">
-            Answer <span className="font-mono text-lg text-slate-500 sm:text-xl">{shortId(answer.id)}</span>
+            <span className="font-mono">{shortId(answer.id)}</span>
             <AnswerStatusBadge status={answer.status} />
           </span>
         }
@@ -133,9 +133,15 @@ export default function AnswerPage() {
             {answer.brands_mentioned.length ? (
               <div className="flex flex-wrap gap-2">
                 {answer.brands_mentioned.map((brand) => (
-                  <Badge key={brand} tone="indigo">
-                    {brand}
-                  </Badge>
+                  <span
+                    key={brand}
+                    className="inline-flex items-center gap-2 rounded-lg bg-slate-50 py-1 pr-3 pl-1 text-sm font-semibold text-slate-800 ring-1 ring-slate-200 ring-inset"
+                  >
+                    <span className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-slate-700 to-slate-900 text-xs font-bold text-white uppercase">
+                      {brand.slice(0, 1)}
+                    </span>
+                    {humanize(brand)}
+                  </span>
                 ))}
               </div>
             ) : (

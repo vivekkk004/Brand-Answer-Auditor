@@ -12,7 +12,7 @@ export default function ConfidenceBar({ rate, low, high }) {
   const highPct = (high ?? rate) * 100
   return (
     <div
-      className="relative h-2 w-full min-w-32 rounded-full bg-slate-100"
+      className="relative h-2.5 w-full min-w-32 flex-1 rounded-full bg-slate-100"
       role="img"
       aria-label={`Rate ${formatPercent(rate)}, 95% interval ${formatPercent(low)} to ${formatPercent(high)}`}
     >

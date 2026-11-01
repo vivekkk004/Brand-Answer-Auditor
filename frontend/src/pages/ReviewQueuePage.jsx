@@ -34,7 +34,11 @@ function ReviewItemCard({ item, pending, decideError, onDecide }) {
   const { claim } = item
 
   return (
-    <li className="surface animate-page-in p-5 transition-shadow duration-200 hover:shadow-md sm:p-6">
+    <li className="surface animate-page-in relative overflow-hidden p-5 pl-6 transition-shadow duration-200 hover:shadow-lg sm:p-6 sm:pl-7">
+      <span
+        className={`absolute inset-y-0 left-0 w-1 ${item.status === 'open' ? 'bg-gradient-to-b from-rose-500 to-pink-500' : 'bg-slate-200'}`}
+        aria-hidden
+      />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <ReviewStatusBadge status={item.status} />
@@ -136,6 +140,7 @@ export default function ReviewQueuePage() {
   return (
     <>
       <PageHeader
+        eyebrow="Human in the loop"
         title="Review queue"
         description="Every contradicted claim is checked by a person before anyone acts on it. A decision is final."
       />
@@ -170,15 +175,14 @@ export default function ReviewQueuePage() {
               />
             ))}
           </ul>
-          <div className="surface mt-4 overflow-hidden">
-            <Pagination
-              offset={offset}
-              limit={limit}
-              count={items.length}
-              disabled={status === 'loading'}
-              onChange={(next) => dispatch(setReviewOffset(next))}
-            />
-          </div>
+          <Pagination
+            boxed
+            offset={offset}
+            limit={limit}
+            count={items.length}
+            disabled={status === 'loading'}
+            onChange={(next) => dispatch(setReviewOffset(next))}
+          />
         </>
       ) : (
         <Card>

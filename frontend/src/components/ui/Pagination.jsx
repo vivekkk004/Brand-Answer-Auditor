@@ -4,13 +4,13 @@ import { Button } from './Button'
  * Previous / Next paging. The API returns no total count, so "Next" is offered only
  * when the current page came back full.
  */
-export default function Pagination({ offset, limit, count, onChange, disabled }) {
+export default function Pagination({ offset, limit, count, onChange, disabled, boxed = false }) {
   const hasPrevious = offset > 0
   const hasNext = count === limit
   if (!hasPrevious && !hasNext) return null
   return (
     <nav
-      className="flex items-center justify-between gap-3 border-t border-slate-100 px-5 py-3 sm:px-6"
+      className={`flex items-center justify-between gap-3 px-5 py-3 sm:px-6 ${boxed ? 'surface mt-4' : 'border-t border-slate-100'}`}
       aria-label="Pagination"
     >
       <p className="text-sm text-slate-500 tabular-nums">

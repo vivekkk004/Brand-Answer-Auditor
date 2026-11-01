@@ -1,13 +1,14 @@
 import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import { BudgetBar, ProviderChips, RunIdCell } from '../components/domain/RunCells'
 import { RunStatusBadge } from '../components/domain/StatusBadges'
 import { Button, ButtonLink } from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import EmptyState from '../components/ui/EmptyState'
 import ErrorBanner from '../components/ui/ErrorBanner'
 import Icon from '../components/ui/Icon'
-import { INPUT_CLASSES } from '../components/ui/inputStyles'
+import { INPUT_CLASSES, SELECT_CLASSES } from '../components/ui/inputStyles'
 import PageHeader from '../components/ui/PageHeader'
 import Pagination from '../components/ui/Pagination'
 import LoadingState from '../components/ui/LoadingState'
@@ -15,7 +16,7 @@ import Table from '../components/ui/Table'
 import { fetchRuns, setRunsFilter, setRunsOffset } from '../features/runs/runsSlice'
 import { PATHS, runPath } from '../routes/paths'
 import { RUN_STATUSES } from '../utils/constants'
-import { formatDateTime, formatNumber, humanize, shortId } from '../utils/format'
+import { formatDateTime, humanize } from '../utils/format'
 
 export default function RunsPage() {
   const dispatch = useDispatch()
@@ -29,37 +30,32 @@ export default function RunsPage() {
   }, [dispatch, filter, limit, offset])
 
   const columns = [
-    {
-      key: 'id',
-      header: 'Run',
-      render: (run) => (
-        <Link
-          to={runPath(run.id)}
-          className="font-mono text-xs font-medium text-indigo-700 hover:underline"
-          onClick={(event) => event.stopPropagation()}
-        >
-          {shortId(run.id)}
-        </Link>
-      ),
-    },
+    { key: 'id', header: 'Run', render: (run) => <RunIdCell run={run} /> },
     { key: 'status', header: 'Status', render: (run) => <RunStatusBadge status={run.status} /> },
-    { key: 'category', header: 'Category', render: (run) => humanize(run.config.category) },
     {
       key: 'providers',
       header: 'Assistants',
-      render: (run) => run.config.answer_providers?.map(humanize).join(', '),
+      render: (run) => <ProviderChips providers={run.config.answer_providers} />,
     },
-    { key: 'repeats', header: 'Repeats', className: 'text-right', render: (run) => run.config.repeats },
+    {
+      key: 'repeats',
+      header: 'Repeats',
+      className: 'text-center',
+      render: (run) => (
+        <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-slate-100 px-1.5 text-xs font-semibold text-slate-700">
+          ×{run.config.repeats}
+        </span>
+      ),
+    },
     {
       key: 'calls',
       header: 'Model calls',
-      className: 'whitespace-nowrap text-right',
-      render: (run) => `${formatNumber(run.model_calls)} / ${formatNumber(run.max_model_calls)}`,
+      render: (run) => <BudgetBar used={run.model_calls} max={run.max_model_calls} />,
     },
     {
       key: 'created',
       header: 'Created',
-      className: 'whitespace-nowrap',
+      className: 'whitespace-nowrap text-slate-500',
       render: (run) => formatDateTime(run.created_at),
     },
   ]
@@ -67,6 +63,7 @@ export default function RunsPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Workspace"
         title="Audit runs"
         description="Every run you queued, newest first."
         actions={
@@ -81,27 +78,32 @@ export default function RunsPage() {
         bodyClassName=""
         title="Runs"
         description="Click a row to open the run."
+        icon={<Icon name="runs" className="h-5 w-5" />}
         actions={
           <>
             <label htmlFor="status-filter" className="sr-only">
               Filter by status
             </label>
-            <select
-              id="status-filter"
-              value={filter}
-              onChange={(event) => dispatch(setRunsFilter(event.target.value))}
-              className={`${INPUT_CLASSES} w-44`}
-            >
-              <option value="">All statuses</option>
-              {RUN_STATUSES.map((value) => (
-                <option key={value} value={value}>
-                  {humanize(value)}
-                </option>
-              ))}
-            </select>
-            <Button variant="secondary" onClick={load} aria-label="Refresh">
-              <Icon name="refresh" className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <div className="w-44">
+                <select
+                  id="status-filter"
+                  value={filter}
+                  onChange={(event) => dispatch(setRunsFilter(event.target.value))}
+                  className={SELECT_CLASSES}
+                >
+                  <option value="">All statuses</option>
+                  {RUN_STATUSES.map((value) => (
+                    <option key={value} value={value}>
+                      {humanize(value)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Button variant="secondary" onClick={load} aria-label="Refresh">
+                <Icon name="refresh" className="h-4 w-4" />
+              </Button>
+            </div>
           </>
         }
       >

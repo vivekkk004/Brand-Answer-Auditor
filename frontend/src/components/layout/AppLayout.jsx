@@ -58,11 +58,11 @@ function SidebarContent({ onNavigate }) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center px-5">
-        <Logo to={PATHS.app} />
+        <Logo to={PATHS.app} dark />
       </div>
 
-      <div className="px-3 pt-4">
-        <p className="px-3 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+      <div className="px-3 pt-6">
+        <p className="px-3 text-[11px] font-semibold tracking-wider text-indigo-200/50 uppercase">
           Workspace
         </p>
         <nav className="mt-2 space-y-1" aria-label="App">
@@ -73,21 +73,21 @@ function SidebarContent({ onNavigate }) {
               end={item.end}
               onClick={onNavigate}
               className={({ isActive }) =>
-                `group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 ${
+                `group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
                   isActive
-                    ? 'bg-indigo-50 text-indigo-700'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'bg-gradient-to-r from-indigo-500/25 to-violet-500/10 text-white ring-1 ring-white/10 ring-inset'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }`
               }
             >
               {({ isActive }) => (
                 <>
                   {isActive ? (
-                    <span className="absolute top-1.5 bottom-1.5 left-0 w-1 rounded-r-full bg-indigo-600" />
+                    <span className="absolute top-2 bottom-2 -left-3 w-1 rounded-r-full bg-gradient-to-b from-indigo-400 to-violet-400 shadow-[0_0_12px_rgb(129_140_248/0.8)]" />
                   ) : null}
                   <Icon
                     name={item.icon}
-                    className={`h-5 w-5 transition-colors ${isActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'}`}
+                    className={`h-5 w-5 transition-colors ${isActive ? 'text-indigo-300' : 'text-slate-500 group-hover:text-slate-300'}`}
                   />
                   {item.label}
                 </>
@@ -98,13 +98,13 @@ function SidebarContent({ onNavigate }) {
       </div>
 
       <div className="mt-auto p-3">
-        <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-          <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
+        <div className="rounded-2xl bg-white/5 p-3.5 ring-1 ring-white/10 ring-inset">
+          <div className="flex items-center gap-2 text-xs font-medium text-slate-300">
             <HealthDot health={health} />
             {HEALTH_STYLE[health].text}
           </div>
           {apiKey ? (
-            <p className="mt-2 flex items-center gap-1.5 font-mono text-xs text-slate-500">
+            <p className="mt-2 flex items-center gap-1.5 font-mono text-xs text-slate-400">
               <Icon name="key" className="h-3.5 w-3.5" />
               baa_••••{apiKey.slice(-4)}
             </p>
@@ -112,7 +112,7 @@ function SidebarContent({ onNavigate }) {
           <button
             type="button"
             onClick={() => dispatch(logout())}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-slate-700 ring-1 ring-slate-200 transition-colors hover:bg-slate-100"
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-slate-200 ring-1 ring-white/10 transition-colors ring-inset hover:bg-white/15 hover:text-white"
           >
             <Icon name="logout" className="h-4 w-4" />
             Disconnect
@@ -155,9 +155,9 @@ export default function AppLayout() {
   const crumbs = crumbsFor(location.pathname)
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="bg-app-wash min-h-screen bg-slate-50">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 border-r border-slate-200/80 bg-white lg:block">
+      <aside className="bg-ink fixed inset-y-0 left-0 z-20 hidden w-64 lg:block">
         <SidebarContent />
       </aside>
 
@@ -170,11 +170,11 @@ export default function AppLayout() {
             aria-label="Close menu"
             onClick={() => setMenuOpen(false)}
           />
-          <aside className="animate-drawer-in relative h-full w-72 max-w-[85%] bg-white shadow-xl">
+          <aside className="animate-drawer-in bg-ink relative h-full w-72 max-w-[85%] shadow-xl">
             <button
               type="button"
               onClick={() => setMenuOpen(false)}
-              className="absolute top-4 right-3 rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+              className="absolute top-4 right-3 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
               aria-label="Close menu"
             >
               <Icon name="close" />
@@ -186,7 +186,7 @@ export default function AppLayout() {
 
       <div className="lg:pl-64">
         {/* Top bar: menu (mobile), breadcrumbs, API status, primary action */}
-        <header className="sticky top-0 z-10 border-b border-slate-200/80 bg-white/80 backdrop-blur-lg">
+        <header className="sticky top-0 z-10 border-b border-slate-200/60 bg-white/70 backdrop-blur-xl">
           <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
             <button
               type="button"

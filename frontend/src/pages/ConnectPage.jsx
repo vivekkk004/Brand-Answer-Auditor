@@ -37,10 +37,10 @@ export default function ConnectPage() {
   return (
     <div className="animate-page-in mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 sm:py-16 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-20">
       {/* Brand panel */}
-      <div className="relative isolate hidden overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-600 p-10 text-white shadow-float lg:flex lg:flex-col">
-        <div className="bg-grid absolute inset-0 -z-10 opacity-20 invert" />
-        <div className="absolute -right-20 -bottom-20 -z-10 h-72 w-72 rounded-full bg-violet-400/40 blur-3xl" />
-        <p className="text-sm font-semibold text-indigo-100">Brand Answer Auditor</p>
+      <div className="bg-ink relative isolate hidden overflow-hidden rounded-3xl p-10 text-white shadow-float lg:flex lg:flex-col">
+        <div className="bg-grid absolute inset-0 -z-10 opacity-[0.07] invert" />
+        <div className="animate-aurora absolute -right-20 -bottom-20 -z-10 h-72 w-72 rounded-full bg-violet-500/30 blur-3xl" />
+        <p className="text-sm font-semibold text-indigo-200/80">Brand Answer Auditor</p>
         <h2 className="mt-4 text-3xl font-bold tracking-tight">
           Audit AI answers with confidence.
         </h2>
@@ -51,7 +51,7 @@ export default function ConnectPage() {
         <ul className="mt-10 space-y-4">
           {POINTS.map((point) => (
             <li key={point.text} className="flex items-center gap-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15 ring-1 ring-white/20">
+              <span className="icon-tile h-9 w-9">
                 <Icon name={point.icon} className="h-5 w-5" />
               </span>
               <span className="text-[15px] font-medium">{point.text}</span>
@@ -59,7 +59,7 @@ export default function ConnectPage() {
           ))}
         </ul>
         <div className="mt-auto" />
-        <div className="mt-10 rounded-2xl bg-white/10 p-5 ring-1 ring-white/15 backdrop-blur">
+        <div className="mt-10 rounded-2xl bg-white/5 p-5 ring-1 ring-white/10 backdrop-blur">
           <p className="flex items-center gap-2 text-sm font-semibold">
             <Icon name="shield" className="h-4 w-4" />
             Your key stays private
@@ -74,7 +74,7 @@ export default function ConnectPage() {
       {/* Form */}
       <div className="flex flex-col justify-center">
         <div className="surface mx-auto w-full max-w-md p-6 sm:p-8 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-sm">
+          <div className="icon-tile h-12 w-12 rounded-2xl">
             <Icon name="key" className="h-6 w-6" />
           </div>
           <h1 className="mt-6 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { formatPercent } from '../../utils/format'
+import { formatPercent, humanize } from '../../utils/format'
 import EmptyState from '../ui/EmptyState'
 import SegmentedControl from '../ui/SegmentedControl'
 import Table from '../ui/Table'
@@ -25,7 +25,18 @@ export default function InclusionTable({ inclusion }) {
   }
 
   const columns = [
-    { key: 'brand_id', header: 'Brand', className: 'font-medium text-slate-900' },
+    {
+      key: 'brand_id',
+      header: 'Brand',
+      render: (row) => (
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-7 w-7 flex-none items-center justify-center rounded-lg bg-gradient-to-br from-slate-700 to-slate-900 text-xs font-bold text-white uppercase">
+            {row.brand_id.slice(0, 1)}
+          </span>
+          <span className="font-semibold text-slate-900">{humanize(row.brand_id)}</span>
+        </div>
+      ),
+    },
     { key: 'kn', header: 'Named in', className: 'whitespace-nowrap', render: (row) => `${row.k} of ${row.n}` },
     {
       key: 'rate',
@@ -35,9 +46,9 @@ export default function InclusionTable({ inclusion }) {
     {
       key: 'ci',
       header: '95% interval',
-      className: 'w-2/5',
+      className: 'w-1/2',
       render: (row) => (
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-56 items-center gap-3">
           <ConfidenceBar rate={row.rate} low={row.ci_low} high={row.ci_high} />
           <span className="w-28 flex-none text-xs whitespace-nowrap text-slate-500">
             {row.ci_low === null ? '' : `${formatPercent(row.ci_low)} – ${formatPercent(row.ci_high)}`}
