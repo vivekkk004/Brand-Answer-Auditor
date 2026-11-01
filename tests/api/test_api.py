@@ -1,6 +1,7 @@
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -10,7 +11,9 @@ from sqlalchemy.orm import Session, sessionmaker
 from auditor.api import services
 from auditor.api.app import create_app
 from auditor.api.security import create_api_client
+from auditor.db import models as db
 from auditor.db.session import make_engine, make_session_factory
+from auditor.enums import RunStatus
 from auditor.llm.errors import PermanentProviderError, ProviderConfigError, ProviderTimeoutError
 from auditor.llm.fake import ScriptedClient, tool_call
 from auditor.llm.types import ModelResponse
@@ -128,6 +131,9 @@ def test_auth_is_checked_before_the_body(api: Api) -> None:
         ("post", "/v1/verify", {"text": "x", "market": "usa"}),
         ("get", "/v1/review-items?status=maybe", None),
         ("get", "/v1/review-items?limit=500", None),
+        ("get", "/v1/audit-runs?status=maybe", None),
+        ("get", "/v1/audit-runs?limit=0", None),
+        ("get", "/v1/audit-runs?offset=-1", None),
         ("get", "/v1/answers/not-a-uuid", None),
         ("patch", f"/v1/review-items/{uuid.uuid4()}", {"decision": "approved"}),
     ],
@@ -275,6 +281,57 @@ def test_get_run(api: Api) -> None:
     response = api.http.get(f"/v1/audit-runs/{created['id']}", headers=api.headers())
     assert response.status_code == 200
     assert response.json() == created
+
+
+def create_runs(api: Api, count: int) -> list[str]:
+    """Create `count` runs with distinct keys and clearly ordered creation times."""
+    ids = [api.create_run(idempotency_key=f"list-{i}").json()["id"] for i in range(count)]
+    with api.factory.begin() as session:
+        for minute, run_id in enumerate(ids):
+            run = session.get(db.AuditRun, uuid.UUID(run_id))
+            run.created_at = datetime(2026, 1, 1, 12, minute, tzinfo=UTC)
+    return ids
+
+
+def test_list_runs_newest_first_and_only_own(api: Api) -> None:
+    ids = create_runs(api, 3)
+    api.create_run(key=api.key_b)  # another client's run must not appear
+
+    response = api.http.get("/v1/audit-runs", headers=api.headers())
+
+    assert response.status_code == 200
+    body = response.json()
+    assert [run["id"] for run in body["items"]] == list(reversed(ids))
+    assert (body["limit"], body["offset"]) == (50, 0)
+    newest = api.http.get(f"/v1/audit-runs/{ids[-1]}", headers=api.headers()).json()
+    assert body["items"][0] == newest  # same shape as GET /v1/audit-runs/{id}
+
+
+def test_list_runs_pagination(api: Api) -> None:
+    ids = create_runs(api, 3)
+
+    page = api.http.get("/v1/audit-runs?limit=2&offset=1", headers=api.headers()).json()
+
+    assert [run["id"] for run in page["items"]] == [ids[1], ids[0]]
+    assert (page["limit"], page["offset"]) == (2, 1)
+
+
+def test_list_runs_status_filter(api: Api) -> None:
+    ids = create_runs(api, 2)
+    with api.factory.begin() as session:
+        session.get(db.AuditRun, uuid.UUID(ids[0])).status = RunStatus.COMPLETED
+
+    completed = api.http.get("/v1/audit-runs?status=completed", headers=api.headers()).json()
+    queued = api.http.get("/v1/audit-runs?status=queued", headers=api.headers()).json()
+
+    assert [run["id"] for run in completed["items"]] == [ids[0]]
+    assert [run["id"] for run in queued["items"]] == [ids[1]]
+
+
+def test_list_runs_needs_a_key(api: Api) -> None:
+    response = api.http.get("/v1/audit-runs")
+    assert response.status_code == 401
+    assert error(response)["code"] == "unauthorized"
 
 
 # --- Isolation between clients ---

@@ -23,6 +23,7 @@ from auditor.api.schemas import (
     ReviewDecision,
     ReviewItemList,
     ReviewItemOut,
+    RunList,
     RunOut,
     VerifyRequest,
 )
@@ -34,7 +35,7 @@ from auditor.catalogue.repository import InMemoryCatalogue
 from auditor.config import Settings
 from auditor.db import models as db
 from auditor.db.models import utc_now
-from auditor.enums import AnswerStatus, ErrorType, ReviewStatus
+from auditor.enums import AnswerStatus, ErrorType, ReviewStatus, RunStatus
 from auditor.llm.errors import ProviderConfigError
 from auditor.llm.types import LLMClient
 
@@ -180,6 +181,27 @@ def get_run(session: Session, client_id: uuid.UUID, run_id: uuid.UUID) -> RunOut
     if run is None or run.client_id != client_id:
         raise ApiError(404, "not_found", "audit run not found")
     return run_out(run)
+
+
+def list_runs(
+    session: Session,
+    client_id: uuid.UUID,
+    status: RunStatus | None,
+    limit: int,
+    offset: int,
+) -> RunList:
+    """The caller's runs, newest first, so a dashboard shows the latest work at the top."""
+    query = (
+        select(db.AuditRun)
+        .where(db.AuditRun.client_id == client_id)
+        .order_by(db.AuditRun.created_at.desc(), db.AuditRun.id)
+        .limit(limit)
+        .offset(offset)
+    )
+    if status is not None:
+        query = query.where(db.AuditRun.status == status)
+    items = [run_out(run) for run in session.scalars(query)]
+    return RunList(items=items, limit=limit, offset=offset)
 
 
 def run_out(run: db.AuditRun) -> RunOut:

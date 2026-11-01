@@ -50,13 +50,19 @@ direction is costly and a human should confirm it before anyone acts on it.
 - An offline evaluation harness that scores the verifier against a hand-labelled gold set.
 - PostgreSQL 16 storage with Alembic migrations; SQLite for fast tests.
 - Docker image, GitHub Actions CI, Fly.io config.
+- A browser UI in `frontend/` (React, Redux Toolkit, Tailwind CSS): a landing page and an
+  app to queue and follow runs, verify one answer, read answers with highlighted claims and
+  work the review queue. It is a client of the public API only (section 6): it has no
+  server-side code, no database access and no logic the API does not already enforce.
+  The API key is kept in the browser's `sessionStorage` for the tab's lifetime.
 
 ### Out of scope
 
 - Scraping or automating consumer chat apps (ChatGPT web, Gemini app, etc.). We only call
   official model APIs, so results describe the API model, not the consumer app.
 - Explaining *why* a brand is missing from an answer.
-- Any web UI. The API is the product.
+- Any UI logic beyond calling the API (the API stays the product and the source of truth),
+  and serving the UI from the API process.
 - Editing the catalogue through the API (catalogue changes go through the loader script).
 - Per-client catalogues (v1 has one shared catalogue).
 - Separate queue services (Celery, Redis). The worker uses the PostgreSQL table as its
@@ -372,6 +378,7 @@ All timestamps in responses are UTC with an explicit offset.
 | `GET /healthz` | Liveness plus a database ping. | `200 {"status": "ok"}` | `503 {"status": "unavailable"}` database unreachable |
 | `POST /v1/verify` | Verify one answer text now (synchronous). Body: `text` (1–20,000 chars), optional `market`, `prompt_version` (`v1`/`v2`). The answer is saved **before** the model is called, so failed attempts are stored too. | `200` answer with claims and exchanges | `401`; `422` invalid body; `502` provider error (`provider_error`) or invalid model output (`invalid_model_output`, from `prompt` or `tool`); `504` provider timeout; `503` verifier not configured (`config`); `500` `code` or `data`. Every verification error body carries `answer_id` |
 | `POST /v1/audit-runs` | Queue an audit run (body = run config, 6.4). Needs `Idempotency-Key` header (1–200 chars). | `202` new run, with `Location: /v1/audit-runs/{id}`; `200` + `Idempotent-Replayed: true` for the same key and same body | `400` missing `Idempotency-Key`; `401`; `409` same key with a different body; `422` invalid run config (including `max_model_calls` above 5,000) or no prompts match (`no_matching_prompts`) |
+| `GET /v1/audit-runs?status=` | List the caller's runs, newest first (by creation time). `status` is `queued`, `running`, `completed`, `partial` or `failed` (optional). `limit` (default 50, max 200) and `offset`. Each item has the same shape as `GET /v1/audit-runs/{id}`. | `200 {"items": [...], "limit", "offset"}` | `401`; `422` invalid query |
 | `GET /v1/audit-runs/{id}` | Run status, config, model calls, metrics (section 7), failure reason. | `200` | `401`; `404`; `422` malformed ID |
 | `GET /v1/answers/{id}` | One answer: text, status, error, brands mentioned, claims with offsets, labels, fact IDs, rationale, usage, and the verifier conversation (`exchanges`). | `200` | `401`; `404`; `422` malformed ID |
 | `GET /v1/review-items?status=` | List review items with their claims. `status` is `open`, `confirmed` or `dismissed` (optional). `limit` (default 50, max 200) and `offset`. | `200` list | `401`; `422` invalid query |
@@ -666,6 +673,7 @@ Fails (exit 1) if the mean joint F1 or the mean contradicted recall drops by mor
 - [ ] `/v1/verify` maps failures to `502` / `504` / `503` / `500`, stores the failed attempt, and returns its `answer_id`.
 - [ ] Idempotency: same key + same canonical body replays (`200`, `Idempotent-Replayed`); a different body is `409`; another client's identical key creates its own run; a lost race returns the winner.
 - [ ] A reviewed item cannot be decided twice (`409`).
+- [ ] `GET /v1/audit-runs` lists only the caller's runs, newest first; `limit`/`offset` page through them; `status` filters them; an invalid query is `422`.
 - [ ] SPEC.md matches the implemented behaviour.
 
 ---

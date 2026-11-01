@@ -81,6 +81,12 @@ class RunOut(BaseModel):
     finished_at: datetime | None
 
 
+class RunList(BaseModel):
+    items: list[RunOut]
+    limit: int
+    offset: int
+
+
 class ReviewItemOut(BaseModel):
     id: uuid.UUID
     status: str

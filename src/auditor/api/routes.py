@@ -16,11 +16,12 @@ from auditor.api.schemas import (
     ReviewDecision,
     ReviewItemList,
     ReviewItemOut,
+    RunList,
     RunOut,
     VerifyRequest,
 )
 from auditor.audit.run_config import RunConfig
-from auditor.enums import ReviewStatus
+from auditor.enums import ReviewStatus, RunStatus
 
 router = APIRouter()
 
@@ -65,6 +66,17 @@ def create_audit_run(
         response.status_code = 200
         response.headers["Idempotent-Replayed"] = "true"
     return services.run_out(run)
+
+
+@router.get("/v1/audit-runs", response_model=RunList)
+def list_audit_runs(
+    client_id: ClientIdDep,
+    session: SessionDep,
+    status: RunStatus | None = None,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> RunList:
+    return services.list_runs(session, client_id, status, limit, offset)
 
 
 @router.get("/v1/audit-runs/{run_id}", response_model=RunOut)
