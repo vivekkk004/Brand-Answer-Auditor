@@ -28,7 +28,8 @@ export default function Logo({ to = '/', compact = false }) {
     <Link to={to} className="inline-flex items-center gap-2.5" aria-label="Brand Answer Auditor home">
       <LogoMark />
       {compact ? null : (
-        <span className="text-[15px] font-semibold tracking-tight whitespace-nowrap text-slate-900">
+        // On very narrow phones only the mark is shown, so the header never overflows.
+        <span className="hidden text-[15px] font-semibold tracking-tight whitespace-nowrap text-slate-900 min-[420px]:inline">
           Brand Answer <span className="text-gradient">Auditor</span>
         </span>
       )}
