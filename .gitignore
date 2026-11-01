@@ -21,3 +21,7 @@ dist/
 
 # Eval reports: never committed (no result numbers in the repo)
 reports/
+
+# The web UI is its own repository (Brand-Answer-Auditor-frontend). A local clone
+# may sit in frontend/ so the dev setup stays the same; it is not part of this repo.
+frontend/

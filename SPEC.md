@@ -51,7 +51,8 @@ direction is costly and a human should confirm it before anyone acts on it.
 - An offline evaluation harness that scores the verifier against a hand-labelled gold set.
 - PostgreSQL 16 storage with Alembic migrations; SQLite for fast tests.
 - Docker image, GitHub Actions CI, Fly.io config.
-- A browser UI in `frontend/` (React, Redux Toolkit, Tailwind CSS): a landing page and an
+- A browser UI in its own repository, `Brand-Answer-Auditor-frontend` (React, Redux
+  Toolkit, Tailwind CSS): a landing page and an
   app to queue and follow runs, verify one answer, read answers with highlighted claims and
   work the review queue. It is a client of the public API only (section 6): it has no
   server-side code, no database access and no logic the API does not already enforce.

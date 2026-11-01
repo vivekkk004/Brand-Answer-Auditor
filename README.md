@@ -76,8 +76,9 @@ pytest
 
 ## Web UI
 
-A React app in `frontend/` (Redux Toolkit, React Router, Tailwind CSS). It only calls the
-public API below; the key is kept in the browser tab's `sessionStorage`.
+A React app (Redux Toolkit, React Router, Tailwind CSS) in its own repository:
+[Brand-Answer-Auditor-frontend](https://github.com/vivekkk004/Brand-Answer-Auditor-frontend). It only calls the public API below; the
+key is kept in the browser tab's `sessionStorage`.
 
 - **Landing page** — what the service does, how it works, how it stays reliable.
 - **Overview** — API health, open review items, recent runs.
@@ -90,6 +91,7 @@ public API below; the key is kept in the browser tab's `sessionStorage`.
 - **Review queue** — confirm or dismiss contradicted claims, once.
 
 ```
+git clone https://github.com/vivekkk004/Brand-Answer-Auditor-frontend.git frontend   # frontend/ is ignored by this repo
 cd frontend
 npm install
 npm run dev        # http://localhost:5173 (API on :8000; /v1 and /healthz are proxied)
@@ -157,7 +159,7 @@ src/auditor/
 migrations/    Alembic
 data/demo/     fictional catalogue, prompts, eval set
 tests/         pytest; no test calls a real model API
-frontend/      React web UI (services, Redux slices, routes, pages, components)
+frontend/      (not in this repo) local clone of the web UI repository
 ```
 
 Deployment: `Dockerfile` (one image for API and worker), `docker-compose.yml`,
